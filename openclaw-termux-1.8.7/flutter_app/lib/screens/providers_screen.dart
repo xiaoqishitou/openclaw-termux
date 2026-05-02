@@ -4,7 +4,7 @@ import '../models/ai_provider.dart';
 import '../services/provider_config_service.dart';
 import 'provider_detail_screen.dart';
 
-/// Lists all AI providers with their configuration status.
+/// AI 提供商列表 — 配置 API 密钥和模型
 class ProvidersScreen extends StatefulWidget {
   const ProvidersScreen({super.key});
 
@@ -53,13 +53,12 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
   String _statusLabel(AiProvider provider) {
     final isConfigured = _providers.containsKey(provider.id);
     if (!isConfigured) return '';
-    // Check if the active model belongs to this provider
     if (_activeModel != null) {
       final isActive = provider.defaultModels.any((m) => _activeModel!.contains(m)) ||
           _activeModel!.contains(provider.id);
-      if (isActive) return 'Active';
+      if (isActive) return '使用中';
     }
-    return 'Configured';
+    return '已配置';
   }
 
   @override
@@ -68,29 +67,38 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Providers')),
+      appBar: AppBar(
+        title: const Text('AI 提供商'),
+        centerTitle: true,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Active model card
+                // 当前活跃模型卡片
                 if (_activeModel != null && _activeModel!.isNotEmpty) ...[
-                  Card(
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.statusGreen.withAlpha(30), AppColors.statusGreen.withAlpha(10)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.statusGreen.withAlpha(40)),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.statusGreen.withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
-                              Icons.check_circle,
-                              color: AppColors.statusGreen,
-                            ),
+                            child: const Icon(Icons.check_circle, color: AppColors.statusGreen, size: 26),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -98,17 +106,18 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Active Model',
+                                  '当前活跃模型',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: AppColors.statusGreen,
                                     fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 4),
                                 Text(
                                   _activeModel!,
                                   style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -118,13 +127,11 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                 ],
                 Text(
-                  'Select a provider to configure its API key and model.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  '选择提供商以配置 API 密钥和模型',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 16),
                 for (final provider in AiProvider.all)
@@ -135,79 +142,80 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
   }
 
   Widget _buildProviderCard(ThemeData theme, AiProvider provider, bool isDark) {
-    final iconBg = isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6);
     final status = _statusLabel(provider);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () => _openProvider(provider),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? AppColors.darkElevated.withAlpha(80) : Colors.grey.shade200),
+            color: isDark ? AppColors.darkElevated : Colors.white,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                // 图标容器
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [provider.color.withAlpha(40), provider.color.withAlpha(15)]),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(provider.icon, color: provider.color, size: 26),
                 ),
-                child: Icon(provider.icon, color: provider.color),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          provider.name,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            provider.name,
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                        ),
-                        if (status.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (status == 'Active'
-                                      ? AppColors.statusGreen
-                                      : AppColors.statusAmber)
-                                  .withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              status,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: status == 'Active'
-                                    ? AppColors.statusGreen
-                                    : AppColors.statusAmber,
-                                fontWeight: FontWeight.w600,
+                          if (status.isNotEmpty) ...[
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: (status == '使用中'
+                                      ? [AppColors.statusGreen.withAlpha(30), AppColors.statusGreen.withAlpha(10)]
+                                      : [AppColors.statusAmber.withAlpha(30), AppColors.statusAmber.withAlpha(10)]),
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                status,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: status == '使用中' ? AppColors.statusGreen : AppColors.statusAmber,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      provider.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        provider.description,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+                Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../app.dart';
 import '../constants.dart';
@@ -14,12 +15,30 @@ class GatewayControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Consumer<GatewayProvider>(
       builder: (context, provider, _) {
         final state = provider.state;
 
-        return Card(
+        return Container(
+          decoration: BoxDecoration(
+            gradient: isDark
+                ? const LinearGradient(
+                    colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : LinearGradient(
+                    colors: [const Color(0xFFE8EAF6), const Color(0xFFE3F2FD)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            ),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -27,24 +46,102 @@ class GatewayControls extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withAlpha(30),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.hub,
+                        color: AppColors.accent,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Gateway',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '网关',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'AI 网关控制器',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     _statusBadge(state.status, theme),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 if (state.isRunning) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.darkSurfaceAlt
+                          : AppColors.lightSurfaceAlt,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.link_rounded,
+                          size: 16,
+                          color: AppColors.statusBlue,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => WebDashboardScreen(
+                                    url: state.dashboardUrl,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              state.dashboardUrl ?? AppConstants.gatewayUrl,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 13,
+                                color: AppColors.statusBlue,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColors.statusBlue.withAlpha(80),
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          tooltip: '复制 URL',
+                          color: theme.colorScheme.onSurfaceVariant,
+                          onPressed: () {
+                            final url = state.dashboardUrl ?? AppConstants.gatewayUrl;
+                            Clipboard.setData(ClipboardData(text: url));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('URL 已复制到剪贴板')),
+                              duration: Duration(seconds: 2),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          tooltip: '打开仪表盘',
+                          color: theme.colorScheme.onSurfaceVariant,
+                          onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => WebDashboardScreen(
@@ -53,75 +150,61 @@ class GatewayControls extends StatelessWidget {
                               ),
                             );
                           },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (state.errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusRed.withAlpha(15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.statusRed.withAlpha(40)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: AppColors.statusRed, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
                           child: Text(
-                            state.dashboardUrl ?? AppConstants.gatewayUrl,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontFamily: 'monospace',
-                              decoration: TextDecoration.underline,
-                              decorationColor: theme.colorScheme.primary,
+                            state.errorMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.statusRed,
                             ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.copy, size: 18),
-                        tooltip: 'Copy URL',
-                        onPressed: () {
-                          final url = state.dashboardUrl ?? AppConstants.gatewayUrl;
-                          Clipboard.setData(ClipboardData(text: url));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('URL copied to clipboard'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.open_in_new, size: 18),
-                        tooltip: 'Open dashboard',
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => WebDashboardScreen(
-                                url: state.dashboardUrl,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-                if (state.errorMessage != null)
-                  Text(
-                    state.errorMessage!,
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                if (state.errorMessage != null) const SizedBox(height: 12),
+                Row(
                   children: [
                     if (state.isStopped || state.status == GatewayStatus.error)
-                      FilledButton.icon(
-                        onPressed: () => provider.start(),
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Start Gateway'),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => provider.start(),
+                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                          label: const Text('启动网关'),
+                        ),
                       ),
                     if (state.isRunning || state.status == GatewayStatus.starting)
-                      OutlinedButton.icon(
-                        onPressed: () => provider.stop(),
-                        icon: const Icon(Icons.stop),
-                        label: const Text('Stop Gateway'),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => provider.stop(),
+                          icon: const Icon(Icons.stop_rounded, size: 20),
+                          label: const Text('停止网关'),
+                        ),
                       ),
+                    const SizedBox(width: 8),
                     OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const LogsScreen()),
                       ),
-                      icon: const Icon(Icons.article_outlined),
-                      label: const Text('View Logs'),
+                      icon: const Icon(Icons.article_outlined, size: 20),
+                      label: const Text('日志'),
                     ),
                   ],
                 ),
@@ -141,39 +224,40 @@ class GatewayControls extends StatelessWidget {
     switch (status) {
       case GatewayStatus.running:
         color = AppColors.statusGreen;
-        label = 'Running';
-        icon = Icons.check_circle_outline;
+        label = '运行中';
+        icon = Icons.check_circle_outline_rounded;
       case GatewayStatus.starting:
         color = AppColors.statusAmber;
-        label = 'Starting';
+        label = '启动中';
         icon = Icons.hourglass_top;
       case GatewayStatus.error:
         color = AppColors.statusRed;
-        label = 'Error';
-        icon = Icons.error_outline;
+        label = '错误';
+        icon = Icons.error_outline_rounded;
       case GatewayStatus.stopped:
         color = AppColors.statusGrey;
-        label = 'Stopped';
+        label = '已停止';
         icon = Icons.circle_outlined;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
+        color: color.withAlpha(20),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(60)),
+        border: Border.all(color: color.withAlpha(50)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
-          const SizedBox(width: 5),
+          const SizedBox(width: 6),
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
             ),
           ),
         ],

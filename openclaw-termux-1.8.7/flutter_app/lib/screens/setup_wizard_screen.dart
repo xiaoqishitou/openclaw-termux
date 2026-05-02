@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../app.dart';
 import '../constants.dart';
@@ -46,7 +47,6 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
           builder: (context, provider, _) {
             final state = provider.state;
 
-            // Load package statuses once setup completes
             if (state.isComplete && _pkgStatuses.isEmpty) {
               _refreshPkgStatuses();
             }
@@ -56,56 +56,90 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 32),
-                  Image.asset(
-                    'assets/ic_launcher.png',
-                    width: 64,
-                    height: 64,
+                  const SizedBox(height: 24),
+                  // Logo with gradient background
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.accent, AppColors.accentLight],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withAlpha(30),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/ic_launcher.png',
+                      width: 52,
+                      height: 52,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
-                    'Setup OpenClaw',
+                    '安装 OpenClaw',
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _started
-                        ? 'Setting up the environment. This may take several minutes.'
-                        : 'This will download Ubuntu, Node.js, and OpenClaw into a self-contained environment.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _started
+                                ? '正在设置环境，这可能需要几分钟时间。'
+                                : '下载 Ubuntu、Node.js 和 OpenClaw 到独立环境中。',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   Expanded(
                     child: _buildSteps(state, theme, isDark),
                   ),
                   if (state.hasError) ...[
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 160),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.error_outline, color: theme.colorScheme.error),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Text(
-                                  state.error ?? 'Unknown error',
-                                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusRed.withAlpha(15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.statusRed.withAlpha(40)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: AppColors.statusRed, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Text(
+                                state.error ?? '未知错误',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.statusRed,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -115,8 +149,8 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                       width: double.infinity,
                       child: FilledButton.icon(
                         onPressed: () => _goToOnboarding(context),
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Configure API Keys'),
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: const Text('配置 API 密钥'),
                       ),
                     )
                   else if (!_started || state.hasError)
@@ -129,22 +163,22 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                                 setState(() => _started = true);
                                 provider.runSetup();
                               },
-                        icon: const Icon(Icons.download),
-                        label: Text(_started ? 'Retry Setup' : 'Begin Setup'),
+                        icon: const Icon(Icons.download_rounded),
+                        label: Text(_started ? '重试安装' : '开始安装'),
                       ),
                     ),
                   if (!_started) ...[
                     const SizedBox(height: 8),
                     Center(
                       child: Text(
-                        'Requires ~500MB of storage and an internet connection',
+                        '需要约 500MB 存储空间和网络连接',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Center(
                     child: Text(
                       'by ${AppConstants.authorName} | ${AppConstants.orgName}',
@@ -164,11 +198,11 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
   Widget _buildSteps(SetupState state, ThemeData theme, bool isDark) {
     final steps = [
-      (1, 'Download Ubuntu rootfs', SetupStep.downloadingRootfs),
-      (2, 'Extract rootfs', SetupStep.extractingRootfs),
-      (3, 'Install Node.js', SetupStep.installingNode),
-      (4, 'Install OpenClaw', SetupStep.installingOpenClaw),
-      (5, 'Configure Bionic Bypass', SetupStep.configuringBypass),
+      (1, '下载 Ubuntu rootfs', SetupStep.downloadingRootfs),
+      (2, '解压 rootfs', SetupStep.extractingRootfs),
+      (3, '安装 Node.js', SetupStep.installingNode),
+      (4, '安装 OpenClaw', SetupStep.installingOpenClaw),
+      (5, '配置 Bionic 补丁', SetupStep.configuringBypass),
     ];
 
     return ListView(
@@ -185,20 +219,23 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         if (state.isComplete) ...[
           const ProgressStep(
             stepNumber: 6,
-            label: 'Setup complete!',
+            label: '安装完成！',
             isComplete: true,
           ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              'OPTIONAL PACKAGES',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Icon(Icons.extension_rounded, size: 16, color: AppColors.mutedText),
+              const SizedBox(width: 8),
+              Text(
+                '可选软件包',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: 8),
           for (final pkg in OptionalPackage.all)
@@ -210,37 +247,42 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
   Widget _buildPackageTile(ThemeData theme, OptionalPackage package, bool isDark) {
     final installed = _pkgStatuses[package.id] ?? false;
-    final iconBg = isDark ? AppColors.darkSurfaceAlt : const Color(0xFFF3F4F6);
+    final pkgColors = {
+      'go': AppColors.statusBlue,
+      'brew': AppColors.statusAmber,
+      'ssh': AppColors.iconSsh,
+    };
+    final color = pkgColors[package.id] ?? AppColors.mutedText;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: ListTile(
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color: iconBg,
-            borderRadius: BorderRadius.circular(10),
+            color: color.withAlpha(isDark ? 25 : 20),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(package.icon, color: theme.colorScheme.onSurfaceVariant, size: 22),
+          child: Icon(package.icon, color: color, size: 22),
         ),
         title: Row(
           children: [
             Text(package.name,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             if (installed) ...[
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.statusGreen.withAlpha(25),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.statusGreen.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('Installed',
+                child: Text('已安装',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: AppColors.statusGreen,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
                     )),
               ),
             ],
@@ -248,10 +290,10 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
         ),
         subtitle: Text('${package.description} (${package.estimatedSize})'),
         trailing: installed
-            ? const Icon(Icons.check_circle, color: AppColors.statusGreen)
+            ? const Icon(Icons.check_circle_rounded, color: AppColors.statusGreen, size: 20)
             : OutlinedButton(
                 onPressed: () => _installPackage(package),
-                child: const Text('Install'),
+                child: const Text('安装'),
               ),
       ),
     );
