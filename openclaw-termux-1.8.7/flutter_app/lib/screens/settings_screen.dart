@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -51,10 +52,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prootPath = await NativeBridge.getProotPath();
       final status = await NativeBridge.getBootstrapStatus();
       final batteryOptimized = await NativeBridge.isBatteryOptimized();
-
       final storageGranted = await NativeBridge.hasStoragePermission();
 
-      // Check optional package statuses
       final filesDir = await NativeBridge.getFilesDir();
       final rootfs = '$filesDir/rootfs/ubuntu';
       final goInstalled = File('$rootfs/usr/bin/go').existsSync();
@@ -74,265 +73,336 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: const Text('设置', centerTitle: true)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              padding: const EdgeInsets.only(bottom: 24),
               children: [
-                _sectionHeader(theme, 'GENERAL'),
-                SwitchListTile(
-                  title: const Text('Auto-start gateway'),
-                  subtitle: const Text('Start the gateway when the app opens'),
-                  value: _autoStart,
-                  onChanged: (value) {
-                    setState(() => _autoStart = value);
-                    _prefs.autoStartGateway = value;
-                  },
-                ),
-                ListTile(
-                  title: const Text('Battery Optimization'),
-                  subtitle: Text(_batteryOptimized
-                      ? 'Optimized (may kill background sessions)'
-                      : 'Unrestricted (recommended)'),
-                  leading: const Icon(Icons.battery_alert),
-                  trailing: _batteryOptimized
-                      ? const Icon(Icons.warning, color: AppColors.statusAmber)
-                      : const Icon(Icons.check_circle, color: AppColors.statusGreen),
-                  onTap: () async {
-                    await NativeBridge.requestBatteryOptimization();
-                    // Refresh status after returning from settings
-                    final optimized = await NativeBridge.isBatteryOptimized();
-                    setState(() => _batteryOptimized = optimized);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Setup Storage'),
-                  subtitle: Text(_storageGranted
-                      ? 'Granted — proot can access /sdcard. Revoke if not needed.'
-                      : 'Not granted (recommended) — tap to grant only if needed'),
-                  leading: const Icon(Icons.sd_storage),
-                  trailing: _storageGranted
-                      ? const Icon(Icons.warning_amber, color: AppColors.statusAmber)
-                      : const Icon(Icons.check_circle, color: AppColors.statusGreen),
-                  onTap: () async {
-                    await NativeBridge.requestStoragePermission();
-                    // Refresh after returning from permission screen
-                    final granted = await NativeBridge.hasStoragePermission();
-                    setState(() => _storageGranted = granted);
-                  },
-                ),
-                const Divider(),
-                _sectionHeader(theme, 'NODE'),
-                SwitchListTile(
-                  title: const Text('Enable Node'),
-                  subtitle: const Text('Provide device capabilities to the gateway'),
-                  value: _nodeEnabled,
-                  onChanged: (value) {
-                    setState(() => _nodeEnabled = value);
-                    _prefs.nodeEnabled = value;
-                    final nodeProvider = context.read<NodeProvider>();
-                    if (value) {
-                      nodeProvider.enable();
-                    } else {
-                      nodeProvider.disable();
-                    }
-                  },
-                ),
-                ListTile(
-                  title: const Text('Node Configuration'),
-                  subtitle: const Text('Connection, pairing, and capabilities'),
-                  leading: const Icon(Icons.devices),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NodeScreen()),
+                _sectionHeader(context, '通用', Icons.tune_rounded),
+                _buildSettingsCard([
+                  SwitchListTile(
+                    title: const Text('自动启动网关'),
+                    subtitle: const Text('打开应用时自动启动网关'),
+                    value: _autoStart,
+                    onChanged: (value) {
+                      setState(() => _autoStart = value);
+                      _prefs.autoStartGateway = value;
+                    },
                   ),
-                ),
-                const Divider(),
-                _sectionHeader(theme, 'SYSTEM INFO'),
-                ListTile(
-                  title: const Text('Architecture'),
-                  subtitle: Text(_arch),
-                  leading: const Icon(Icons.memory),
-                ),
-                ListTile(
-                  title: const Text('PRoot path'),
-                  subtitle: Text(_prootPath),
-                  leading: const Icon(Icons.folder),
-                ),
-                ListTile(
-                  title: const Text('Rootfs'),
-                  subtitle: Text(_status['rootfsExists'] == true
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.storage),
-                ),
-                ListTile(
-                  title: const Text('Node.js'),
-                  subtitle: Text(_status['nodeInstalled'] == true
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.code),
-                ),
-                ListTile(
-                  title: const Text('OpenClaw'),
-                  subtitle: Text(_status['openclawInstalled'] == true
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.cloud),
-                ),
-                ListTile(
-                  title: const Text('Go (Golang)'),
-                  subtitle: Text(_goInstalled
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.integration_instructions),
-                ),
-                ListTile(
-                  title: const Text('Homebrew'),
-                  subtitle: Text(_brewInstalled
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.science),
-                ),
-                ListTile(
-                  title: const Text('OpenSSH'),
-                  subtitle: Text(_sshInstalled
-                      ? 'Installed'
-                      : 'Not installed'),
-                  leading: const Icon(Icons.vpn_key),
-                ),
-                const Divider(),
-                _sectionHeader(theme, 'MAINTENANCE'),
-                ListTile(
-                  title: const Text('Export Snapshot'),
-                  subtitle: const Text('Backup config to Downloads'),
-                  leading: const Icon(Icons.upload_file),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _exportSnapshot,
-                ),
-                ListTile(
-                  title: const Text('Import Snapshot'),
-                  subtitle: const Text('Restore config from backup'),
-                  leading: const Icon(Icons.download),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _importSnapshot,
-                ),
-                ListTile(
-                  title: const Text('Re-run setup'),
-                  subtitle: const Text('Reinstall or repair the environment'),
-                  leading: const Icon(Icons.build),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => const SetupWizardScreen(),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('电池优化'),
+                    subtitle: Text(_batteryOptimized
+                        ? '已优化 — 可能会杀死后台进程'
+                        : '已关闭（推荐）'),
+                    leading: const Icon(Icons.battery_alert_rounded),
+                    trailing: _batteryOptimized
+                        ? _statusChip('警告', AppColors.statusAmber)
+                        : _statusChip('正常', AppColors.statusGreen),
+                    onTap: () async {
+                      await NativeBridge.requestBatteryOptimization();
+                      final optimized = await NativeBridge.isBatteryOptimized();
+                      setState(() => _batteryOptimized = optimized);
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('存储权限'),
+                    subtitle: Text(_storageGranted
+                        ? '已授权 — proot 可访问 /sdcard'
+                        : '未授权（推荐）'),
+                    leading: const Icon(Icons.sd_storage_rounded),
+                    trailing: _storageGranted
+                        ? _statusChip('活跃', AppColors.statusAmber)
+                        : _statusChip('安全', AppColors.statusGreen),
+                    onTap: () async {
+                      await NativeBridge.requestStoragePermission();
+                      final granted = await NativeBridge.hasStoragePermission();
+                      setState(() => _storageGranted = granted);
+                    },
+                  ),
+                ]),
+
+                _sectionHeader(context, '节点', Icons.devices_rounded),
+                _buildSettingsCard([
+                  SwitchListTile(
+                    title: const Text('启用节点'),
+                    subtitle: const Text('向网关提供设备能力'),
+                    value: _nodeEnabled,
+                    onChanged: (value) {
+                      setState(() => _nodeEnabled = value);
+                      _prefs.nodeEnabled = value;
+                      final nodeProvider = context.read<NodeProvider>();
+                      if (value) {
+                        nodeProvider.enable();
+                      } else {
+                        nodeProvider.disable();
+                      }
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('节点配置'),
+                    subtitle: const Text('连接、配对与设备能力'),
+                    leading: const Icon(Icons.settings_ethernet_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const NodeScreen()),
                     ),
                   ),
-                ),
-                const Divider(),
-                _sectionHeader(theme, 'ABOUT'),
-                const ListTile(
-                  title: Text('OpenClaw'),
-                  subtitle: Text(
-                    'AI Gateway for Android\nVersion ${AppConstants.version}',
+                ]),
+
+                _sectionHeader(context, '系统信息', Icons.info_outline_rounded),
+                _buildSettingsCard([
+                  _infoTile('CPU 架构', _arch, Icons.memory_rounded),
+                  const Divider(height: 1),
+                  _infoTile('PRoot 路径', _prootPath, Icons.folder_rounded),
+                  const Divider(height: 1),
+                  _installStatusTile('Rootfs', _status['rootfsExists'] == true),
+                  const Divider(height: 1),
+                  _installStatusTile('Node.js', _status['nodeInstalled'] == true),
+                  const Divider(height: 1),
+                  _installStatusTile('OpenClaw', _status['openclawInstalled'] == true),
+                  const Divider(height: 1),
+                  _installStatusTile('Go (Golang)', _goInstalled),
+                  const Divider(height: 1),
+                  _installStatusTile('Homebrew', _brewInstalled),
+                  const Divider(height: 1),
+                  _installStatusTile('OpenSSH', _sshInstalled),
+                ]),
+
+                _sectionHeader(context, '维护工具', Icons.build_rounded),
+                _buildSettingsCard([
+                  ListTile(
+                    title: const Text('导出快照'),
+                    subtitle: const Text('备份配置到下载目录'),
+                    leading: const Icon(Icons.upload_file_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: _exportSnapshot,
                   ),
-                  leading: Icon(Icons.info_outline),
-                  isThreeLine: true,
-                ),
-                ListTile(
-                  title: const Text('Check for Updates'),
-                  subtitle: const Text('Check GitHub for a newer release'),
-                  leading: _checkingUpdate
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.system_update),
-                  onTap: _checkingUpdate ? null : _checkForUpdates,
-                ),
-                const ListTile(
-                  title: Text('Developer'),
-                  subtitle: Text(AppConstants.authorName),
-                  leading: Icon(Icons.person),
-                ),
-                ListTile(
-                  title: const Text('GitHub'),
-                  subtitle: const Text('mithun50/openclaw-termux'),
-                  leading: const Icon(Icons.code),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse(AppConstants.githubUrl),
-                    mode: LaunchMode.externalApplication,
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('导入快照'),
+                    subtitle: const Text('从备份恢复配置'),
+                    leading: const Icon(Icons.download_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: _importSnapshot,
                   ),
-                ),
-                ListTile(
-                  title: const Text('Contact'),
-                  subtitle: const Text(AppConstants.authorEmail),
-                  leading: const Icon(Icons.email),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse('mailto:${AppConstants.authorEmail}'),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('重新安装'),
+                    subtitle: const Text('重新安装或修复环境'),
+                    leading: const Icon(Icons.refresh_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () => Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const SetupWizardScreen(),
+                      ),
+                    ),
                   ),
-                ),
-                const ListTile(
-                  title: Text('License'),
-                  subtitle: Text(AppConstants.license),
-                  leading: Icon(Icons.description),
-                ),
-                const Divider(),
-                _sectionHeader(theme, AppConstants.orgName.toUpperCase()),
-                ListTile(
-                  title: const Text('Instagram'),
-                  subtitle: const Text('@nexgenxplorer_nxg'),
-                  leading: const Icon(Icons.camera_alt),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse(AppConstants.instagramUrl),
-                    mode: LaunchMode.externalApplication,
+                ]),
+
+                _sectionHeader(context, '关于', Icons.openclaw_rounded),
+                _buildSettingsCard([
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withAlpha(25),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.hub, color: AppColors.accent, size: 20),
+                    ),
+                    title: const Text('OpenClaw'),
+                    subtitle: Text(
+                      'AI 网关 for Android\n版本 ${AppConstants.version}',
+                    ),
+                    isThreeLine: true,
                   ),
-                ),
-                ListTile(
-                  title: const Text('YouTube'),
-                  subtitle: const Text('@nexgenxplorer'),
-                  leading: const Icon(Icons.play_circle_fill),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse(AppConstants.youtubeUrl),
-                    mode: LaunchMode.externalApplication,
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('检查更新'),
+                    subtitle: const Text('检查 GitHub 是否有新版本'),
+                    leading: _checkingUpdate
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.system_update_rounded),
+                    onTap: _checkingUpdate ? null : _checkForUpdates,
                   ),
-                ),
-                ListTile(
-                  title: const Text('Play Store'),
-                  subtitle: const Text('NextGenX Apps'),
-                  leading: const Icon(Icons.shop),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse(AppConstants.playStoreUrl),
-                    mode: LaunchMode.externalApplication,
+                  const Divider(height: 1),
+                  const ListTile(
+                    title: Text('Developer'),
+                    subtitle: Text(AppConstants.authorName),
+                    leading: Icon(Icons.person_rounded),
                   ),
-                ),
-                ListTile(
-                  title: const Text('Email'),
-                  subtitle: const Text(AppConstants.orgEmail),
-                  leading: const Icon(Icons.email_outlined),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => launchUrl(
-                    Uri.parse('mailto:${AppConstants.orgEmail}'),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('GitHub'),
+                    subtitle: const Text('mithun50/openclaw-termux'),
+                    leading: const Icon(Icons.code_rounded),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse(AppConstants.githubUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
                   ),
-                ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('Contact'),
+                    subtitle: const Text(AppConstants.authorEmail),
+                    leading: const Icon(Icons.email_rounded),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse('mailto:${AppConstants.authorEmail}'),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  const ListTile(
+                    title: Text('License'),
+                    subtitle: Text(AppConstants.license),
+                    leading: Icon(Icons.description_rounded),
+                  ),
+                ]),
+
+                _sectionHeader(context, AppConstants.orgName, Icons.business_rounded),
+                _buildSettingsCard([
+                  ListTile(
+                    title: const Text('Instagram'),
+                    subtitle: const Text('@nexgenxplorer_nxg'),
+                    leading: const Icon(Icons.camera_alt_rounded),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse(AppConstants.instagramUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('YouTube'),
+                    subtitle: const Text('@nexgenxplorer'),
+                    leading: const Icon(Icons.play_circle_fill_rounded),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse(AppConstants.youtubeUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('Play Store'),
+                    subtitle: const Text('NextGenX Apps'),
+                    leading: const Icon(Icons.shop_rounded),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse(AppConstants.playStoreUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('Email'),
+                    subtitle: const Text(AppConstants.orgEmail),
+                    leading: const Icon(Icons.email_outlined),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+                    onTap: () => launchUrl(
+                      Uri.parse('mailto:${AppConstants.orgEmail}'),
+                    ),
+                  ),
+                ]),
               ],
             ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String title, IconData icon) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.mutedText),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard(List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+  }
+
+  Widget _statusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(String title, String value, IconData icon) {
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+      leading: Icon(icon),
+    );
+  }
+
+  Widget _installStatusTile(String name, bool installed) {
+    return ListTile(
+      title: Text(name),
+      leading: Icon(
+        installed ? Icons.check_circle_rounded : Icons.cancel_outlined,
+        color: installed ? AppColors.statusGreen : AppColors.statusGrey,
+        size: 22,
+      ),
+      trailing: _statusChip(
+        installed ? '已安装' : '未安装',
+        installed ? AppColors.statusGreen : AppColors.statusGrey,
+      ),
     );
   }
 
@@ -346,7 +416,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       return '$sdcard/Download/openclaw-snapshot.json';
     }
-    // Fallback to app-private directory
     final dir = await getApplicationDocumentsDirectory();
     return '${dir.path}/openclaw-snapshot.json';
   }
@@ -373,12 +442,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Snapshot saved to $path')),
+        SnackBar(content: Text('快照已保存到 $path')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $e')),
+        SnackBar(content: Text('导出失败：$e')),
       );
     }
   }
@@ -391,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!await file.exists()) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No snapshot found at $path')),
+          SnackBar(content: Text('在 $path 未找到快照文件')),
         );
         return;
       }
@@ -399,13 +468,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final content = await file.readAsString();
       final snapshot = jsonDecode(content) as Map<String, dynamic>;
 
-      // Restore openclaw.json into rootfs
       final openclawConfig = snapshot['openclawConfig'] as String?;
       if (openclawConfig != null) {
         await NativeBridge.writeRootfsFile('root/.openclaw/openclaw.json', openclawConfig);
       }
 
-      // Restore preferences
       if (snapshot['dashboardUrl'] != null) {
         _prefs.dashboardUrl = snapshot['dashboardUrl'] as String;
       }
@@ -428,17 +495,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _prefs.nodeGatewayToken = snapshot['nodeGatewayToken'] as String;
       }
 
-      // Refresh UI
       await _loadSettings();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Snapshot restored successfully. Restart the gateway to apply.')),
+        const SnackBar(content: Text('快照已恢复。重启网关以生效。')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Import failed: $e')),
+        SnackBar(content: Text('导入失败：$e')),
       );
     }
   }
@@ -452,16 +518,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Update Available'),
+            title: const Text('更新可用'),
             content: Text(
-              'A new version is available.\n\n'
-              'Current: ${AppConstants.version}\n'
-              'Latest: ${result.latest}',
+              '发现新版本。\n\n'
+              '当前：${AppConstants.version}\n'
+              '最新：${result.latest}',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Later'),
+                child: const Text('稍后'),
               ),
               FilledButton(
                 onPressed: () {
@@ -471,37 +537,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     mode: LaunchMode.externalApplication,
                   );
                 },
-                child: const Text('Download'),
+                child: const Text('下载'),
               ),
             ],
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("You're on the latest version")),
+          const SnackBar(content: Text('当前已是最新版本')),
         );
       }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not check for updates')),
+        const SnackBar(content: Text('无法检查更新')),
       );
     } finally {
       if (mounted) setState(() => _checkingUpdate = false);
     }
-  }
-
-  Widget _sectionHeader(ThemeData theme, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        title,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
   }
 }

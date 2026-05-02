@@ -13,12 +13,8 @@ import '../services/preferences_service.dart';
 import '../widgets/terminal_toolbar.dart';
 import 'dashboard_screen.dart';
 
-/// Runs `openclaw onboard` in a terminal so the user can configure
-/// API keys and select loopback binding. Shown after first-time setup
-/// and accessible from the dashboard for re-configuration.
+/// OpenClaw 初始配置向导（终端模式）
 class OnboardingScreen extends StatefulWidget {
-  /// If true, shows a "Go to Dashboard" button when onboarding exits.
-  /// Used after first-time setup. If false, just pops back.
   final bool isFirstRun;
 
   const OnboardingScreen({super.key, this.isFirstRun = false});
@@ -40,25 +36,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static final _anyUrlRegex = RegExp(r'https?://[^\s<>\[\]"' "'" r'\)]+');
   static final _tokenUrlRegex = RegExp(r'https?://(?:localhost|127\.0\.0\.1):18789/#token=[0-9a-f]+');
   static final _ansiEscape = AppConstants.ansiEscape;
-  /// Box-drawing and other TUI characters that break URLs when copied
   static final _boxDrawing = RegExp(r'[│┤├┬┴┼╮╯╰╭─╌╴╶┌┐└┘◇◆]+');
-  static final _completionPattern = RegExp(
-    r'onboard(ing)?\s+(is\s+)?complete|successfully\s+onboarded|setup\s+complete',
-    caseSensitive: false,
-  );
+  static final _completionPattern = RegExp(r'onboard(ing)?\s+(is\s+)?complete|successfully\s+onboarded|setup\s+complete', caseSensitive: false);
   String _outputBuffer = '';
 
-  static const _fontFallback = [
-    'monospace',
-    'Noto Sans Mono',
-    'Noto Sans Mono CJK SC',
-    'Noto Sans Mono CJK TC',
-    'Noto Sans Mono CJK JP',
-    'Noto Color Emoji',
-    'Noto Sans Symbols',
-    'Noto Sans Symbols 2',
-    'sans-serif',
-  ];
+  static const _fontFallback = ['monospace','Noto Sans Mono','Noto Sans Mono CJK SC','Noto Sans Mono CJK TC','Noto Sans Mono CJK JP','Noto Color Emoji','Noto Sans Symbols','Noto Sans Symbols 2','sans-serif'];
 
   @override
   void initState() {
@@ -66,481 +48,203 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _terminal = Terminal(maxLines: 10000);
     _controller = TerminalController();
     NativeBridge.startTerminalService();
-    // Defer PTY start until after the first frame so TerminalView has been
-    // laid out and _terminal.viewWidth/viewHeight reflect real screen
-    // dimensions instead of the 80×24 default. This is critical for QR
-    // codes — the shell must know the actual column count to avoid wrapping.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startOnboarding();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startOnboarding());
   }
 
   Future<void> _startOnboarding() async {
-    _pty?.kill();
-    _pty = null;
+    _pty?.kill(); _pty = null;
     try {
-      // Ensure dirs + resolv.conf exist before proot starts (#40).
       try { await NativeBridge.setupDirs(); } catch (_) {}
       try { await NativeBridge.writeResolv(); } catch (_) {}
       try {
         final filesDir = await NativeBridge.getFilesDir();
         const resolvContent = 'nameserver 8.8.8.8\nnameserver 8.8.4.4\n';
         final resolvFile = File('$filesDir/config/resolv.conf');
-        if (!resolvFile.existsSync()) {
-          Directory('$filesDir/config').createSync(recursive: true);
-          resolvFile.writeAsStringSync(resolvContent);
-        }
-        // Also write into rootfs /etc/ so DNS works even if bind-mount fails
+        if (!resolvFile.existsSync()) { Directory('$filesDir/config').createSync(recursive: true); resolvFile.writeAsStringSync(resolvContent); }
         final rootfsResolv = File('$filesDir/rootfs/ubuntu/etc/resolv.conf');
-        if (!rootfsResolv.existsSync()) {
-          rootfsResolv.parent.createSync(recursive: true);
-          rootfsResolv.writeAsStringSync(resolvContent);
-        }
+        if (!rootfsResolv.existsSync()) { rootfsResolv.parent.createSync(recursive: true); rootfsResolv.writeAsStringSync(resolvContent); }
       } catch (_) {}
-      final config = await TerminalService.getProotShellConfig();
-      final args = TerminalService.buildProotArgs(
-        config,
-        columns: _terminal.viewWidth,
-        rows: _terminal.viewHeight,
-      );
 
-      // Replace the login shell with a command that runs onboarding.
-      // buildProotArgs ends with [..., '/bin/bash', '-l']
-      // Replace with [..., '/bin/bash', '-lc', 'openclaw onboard']
+      final config = await TerminalService.getProotShellConfig();
+      final args = TerminalService.buildProotArgs(config, columns: _terminal.viewWidth, rows: _terminal.viewHeight);
 
       final onboardingArgs = List<String>.from(args);
-      onboardingArgs.removeLast(); // remove '-l'
-      onboardingArgs.removeLast(); // remove '/bin/bash'
+      onboardingArgs.removeLast(); onboardingArgs.removeLast();
       onboardingArgs.addAll([
         '/bin/bash', '-lc',
-        'echo "=== OpenClaw Onboarding ===" && '
-        'echo "Configure your API keys and binding settings." && '
-        'echo "TIP: Select Loopback (127.0.0.1) when asked for binding!" && '
+        'echo "=== OpenClaw 初始配置 ===" && '
+        'echo "配置 API 密钥和绑定设置" && '
+        'echo "提示：选择 Loopback (127.0.0.1) 作为绑定地址！" && '
         'echo "" && '
         'openclaw onboard; '
-        'echo "" && echo "Onboarding complete! You can close this screen."',
+        'echo "" && echo "配置完成！您可以关闭此页面。"',
       ]);
 
       _pty = Pty.start(
-        config['executable']!,
-        arguments: onboardingArgs,
-        // Host-side env: only proot-specific vars.
-        // Guest env is set via env -i in buildProotArgs.
+        config['executable']!, arguments: onboardingArgs,
         environment: TerminalService.buildHostEnv(config),
-        columns: _terminal.viewWidth,
-        rows: _terminal.viewHeight,
+        columns: _terminal.viewWidth, rows: _terminal.viewHeight,
       );
 
       _pty!.output.cast<List<int>>().listen((data) {
         final text = utf8.decode(data, allowMalformed: true);
         _terminal.write(text);
-        // Scan output for token URL (e.g. http://localhost:18789/#token=...)
         _outputBuffer += text;
-        // Keep buffer manageable
-        if (_outputBuffer.length > 4096) {
-          _outputBuffer = _outputBuffer.substring(_outputBuffer.length - 2048);
-        }
-        // Strip ANSI escape codes for text analysis
+        if (_outputBuffer.length > 4096) _outputBuffer = _outputBuffer.substring(_outputBuffer.length - 2048);
+
         final cleanText = _outputBuffer.replaceAll(_ansiEscape, '');
-        // For URL matching, strip whitespace + box-drawing chars
-        final cleanForUrl = cleanText
-            .replaceAll(_boxDrawing, '')
-            .replaceAll(RegExp(r'\s+'), '');
-        // Save token URL to preferences if found
+        final cleanForUrl = cleanText.replaceAll(_boxDrawing, '').replaceAll(RegExp(r'\s+'), '');
         final tokenMatch = _tokenUrlRegex.firstMatch(cleanForUrl);
-        if (tokenMatch != null) {
-          _saveTokenUrl(tokenMatch.group(0)!);
-        }
-        // Detect onboarding completion from output text
-        if (!_finished && _completionPattern.hasMatch(cleanText)) {
-          if (mounted) {
-            setState(() => _finished = true);
-          }
-        }
+        if (tokenMatch != null) _saveTokenUrl(tokenMatch.group(0)!);
+        if (!_finished && _completionPattern.hasMatch(cleanText)) { if (mounted) setState(() => _finished = true); }
       });
 
       _pty!.exitCode.then((code) {
-        _terminal.write('\r\n[Onboarding exited with code $code]\r\n');
-        if (mounted) {
-          setState(() => _finished = true);
-        }
+        _terminal.write('\r\n[配置程序退出，代码：$code]\r\n');
+        if (mounted) setState(() => _finished = true);
       });
 
       _terminal.onOutput = (data) {
         if (_ctrlNotifier.value && data.length == 1) {
           final code = data.toLowerCase().codeUnitAt(0);
-          if (code >= 97 && code <= 122) {
-            _pty?.write(Uint8List.fromList([code - 96]));
-            _ctrlNotifier.value = false;
-            return;
-          }
+          if (code >= 97 && code <= 122) { _pty?.write(Uint8List.fromList([code - 96])); _ctrlNotifier.value = false; return; }
         }
-        if (_altNotifier.value && data.isNotEmpty) {
-          _pty?.write(utf8.encode('\x1b$data'));
-          _altNotifier.value = false;
-          return;
-        }
+        if (_altNotifier.value && data.isNotEmpty) { _pty?.write(utf8.encode('\x1b$data')); _altNotifier.value = false; return; }
         _pty?.write(utf8.encode(data));
       };
 
-      _terminal.onResize = (w, h, pw, ph) {
-        _pty?.resize(h, w);
-      };
-
+      _terminal.onResize = (w, h, pw, ph) => _pty?.resize(h, w);
       setState(() => _loading = false);
-    } catch (e) {
-      setState(() {
-        _loading = false;
-        _error = 'Failed to start onboarding: $e';
-      });
-    }
+    } catch (e) { setState(() { _loading = false; _error = '启动配置失败：$e'; }); }
   }
 
   Future<void> _saveTokenUrl(String url) async {
-    final prefs = PreferencesService();
-    await prefs.init();
-    prefs.dashboardUrl = url;
+    final prefs = PreferencesService(); await prefs.init(); prefs.dashboardUrl = url;
   }
 
   @override
   void dispose() {
-    _ctrlNotifier.dispose();
-    _altNotifier.dispose();
-    _controller.dispose();
-    _pty?.kill();
-    NativeBridge.stopTerminalService();
-    super.dispose();
+    _ctrlNotifier.dispose(); _altNotifier.dispose(); _controller.dispose(); _pty?.kill();
+    NativeBridge.stopTerminalService(); super.dispose();
   }
 
   String? _getSelectedText() {
-    final selection = _controller.selection;
-    if (selection == null || selection.isCollapsed) return null;
-
-    final range = selection.normalized;
-    final sb = StringBuffer();
+    final selection = _controller.selection; if (selection == null || selection.isCollapsed) return null;
+    final range = selection.normalized; final sb = StringBuffer();
     for (int y = range.begin.y; y <= range.end.y; y++) {
       if (y >= _terminal.buffer.lines.length) break;
-      final line = _terminal.buffer.lines[y];
-      final from = (y == range.begin.y) ? range.begin.x : 0;
-      final to = (y == range.end.y) ? range.end.x : null;
-      sb.write(line.getText(from, to));
-      if (y < range.end.y) sb.writeln();
+      final line = _terminal.buffer.lines[y]; final from = (y == range.begin.x) ? range.begin.x : 0; final to = (y == range.end.y) ? range.end.x : null;
+      sb.write(line.getText(from, to)); if (y < range.end.y) sb.writeln();
     }
-    final text = sb.toString().trim();
-    return text.isEmpty ? null : text;
+    return sb.toString().trim().isEmpty ? null : sb.toString().trim();
   }
 
-  /// Extract a clean URL from selected text by stripping box-drawing
-  /// chars and rejoining lines, but splitting on `http` boundaries
-  /// so concatenated URLs don't merge into one.
   String? _extractUrl(String text) {
     final clean = text.replaceAll(_boxDrawing, '').replaceAll(RegExp(r'\s+'), '');
-    // Split before each http(s):// so concatenated URLs become separate
     final parts = clean.split(RegExp(r'(?=https?://)'));
-    // Return the longest URL match (token URLs are longest)
     String? best;
     for (final part in parts) {
       final match = _anyUrlRegex.firstMatch(part);
-      if (match != null) {
-        final url = match.group(0)!;
-        if (best == null || url.length > best.length) {
-          best = url;
-        }
-      }
+      if (match != null) { final url = match.group(0)!; if (best == null || url.length > best.length) best = url; }
     }
     return best;
   }
 
   void _copySelection() {
-    final text = _getSelectedText();
-    if (text == null) return;
-
+    final text = _getSelectedText(); if (text == null) return;
     Clipboard.setData(ClipboardData(text: text));
-
-    // If the copied text contains a URL, offer "Open" action
     final url = _extractUrl(text);
     if (url != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Copied to clipboard'),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'Open',
-            onPressed: () {
-              final uri = Uri.tryParse(url);
-              if (uri != null) {
-                launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('已复制到剪贴板'), duration: const Duration(seconds: 3), action: SnackBarAction(label: '打开', onPressed: () { final uri = Uri.tryParse(url); if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication); })));
+    } else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制到剪贴板'), duration: Duration(seconds: 1))); }
   }
 
   void _openSelection() {
-    final text = _getSelectedText();
-    if (text == null) return;
-
+    final text = _getSelectedText(); if (text == null) return;
     final url = _extractUrl(text);
-    if (url != null) {
-      final uri = Uri.tryParse(url);
-      if (uri != null) {
-        launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No URL found in selection'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    if (url != null) { final uri = Uri.tryParse(url); if (uri != null) { launchUrl(uri, mode: LaunchMode.externalApplication); return; } }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('选中内容未包含 URL'), duration: Duration(seconds: 1)));
   }
 
   Future<void> _paste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null && data!.text!.isNotEmpty) {
-      _pty?.write(utf8.encode(data.text!));
-    }
+    final data = await Clipboard.getData(Clipboard.kTextPlain); if (data?.text != null && data!.text!.isNotEmpty) _pty?.write(utf8.encode(data.text!));
   }
 
   Future<void> _takeScreenshot() async {
     final path = await ScreenshotService.capture(_screenshotKey, prefix: 'onboarding');
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(path != null
-            ? 'Screenshot saved: ${path.split('/').last}'
-            : 'Failed to capture screenshot'),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(path != null ? '截图已保存：${path.split('/').last}' : '截图失败')));
   }
 
   void _handleTap(TapUpDetails details, CellOffset offset) {
-    // Join adjacent lines and extract URL, handling wrapped URLs
-    // and TUI box-drawing characters.
     final totalLines = _terminal.buffer.lines.length;
     final startRow = (offset.y - 2).clamp(0, totalLines - 1);
     final endRow = (offset.y + 2).clamp(0, totalLines - 1);
-
     final sb = StringBuffer();
-    for (int row = startRow; row <= endRow; row++) {
-      sb.write(_getLineText(row).trimRight());
-    }
-    final url = _extractUrl(sb.toString());
-    if (url != null) {
-      _openUrl(url);
-    }
+    for (int row = startRow; row <= endRow; row++) sb.write(_getLineText(row).trimRight());
+    final url = _extractUrl(sb.toString()); if (url != null) _openUrl(url);
   }
 
   String _getLineText(int row) {
-    try {
-      final line = _terminal.buffer.lines[row];
-      final sb = StringBuffer();
-      for (int i = 0; i < line.length; i++) {
-        final char = line.getCodePoint(i);
-        if (char != 0) {
-          sb.writeCharCode(char);
-        }
-      }
-      return sb.toString();
-    } catch (_) {
-      return '';
-    }
+    try { final line = _terminal.buffer.lines[row]; final sb = StringBuffer();
+      for (int i = 0; i < line.length; i++) { final char = line.getCodePoint(i); if (char != 0) sb.writeCharCode(char); }
+      return sb.toString(); } catch (_) { return ''; }
   }
 
   Future<void> _openUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-
+    final uri = Uri.tryParse(url); if (uri == null) return;
     final shouldOpen = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Open Link'),
-        content: Text(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: url));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Link copied'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-              Navigator.pop(ctx, false);
-            },
-            child: const Text('Copy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Open'),
-          ),
-        ],
-      ),
+      builder: (ctx) => AlertDialog(title: const Text('打开链接'), content: Text(url), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+        TextButton(onPressed: () { Clipboard.setData(ClipboardData(text: url)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('链接已复制'))); Navigator.pop(ctx, false); }, child: const Text('复制')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('打开')),
+      ]),
     );
-
-    if (shouldOpen == true) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    if (shouldOpen == true) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _goToDashboard() async {
-    final navigator = Navigator.of(context);
-    final prefs = PreferencesService();
-    await prefs.init();
-    prefs.setupComplete = true;
-    prefs.isFirstRun = false;
-
-    if (mounted) {
-      navigator.pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
-    }
+    final navigator = Navigator.of(context); final prefs = PreferencesService(); await prefs.init();
+    prefs.setupComplete = true; prefs.isFirstRun = false;
+    if (mounted) navigator.pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OpenClaw Onboarding'),
-        leading: widget.isFirstRun
-            ? null // no back button during first-run
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+        title: const Text('初始配置', centerTitle: true),
+        leading: widget.isFirstRun ? null : IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).pop()),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.camera_alt_outlined),
-            tooltip: 'Screenshot',
-            onPressed: _takeScreenshot,
-          ),
-          IconButton(
-            icon: const Icon(Icons.copy),
-            tooltip: 'Copy',
-            onPressed: _copySelection,
-          ),
-          IconButton(
-            icon: const Icon(Icons.open_in_browser),
-            tooltip: 'Open URL',
-            onPressed: _openSelection,
-          ),
-          IconButton(
-            icon: const Icon(Icons.paste),
-            tooltip: 'Paste',
-            onPressed: _paste,
-          ),
+          IconButton(icon: const Icon(Icons.camera_alt_outlined), tooltip: '截图', onPressed: _takeScreenshot),
+          IconButton(icon: const Icon(Icons.copy), tooltip: '复制', onPressed: _copySelection),
+          IconButton(icon: const Icon(Icons.open_in_browser), tooltip: '打开 URL', onPressed: _openSelection),
+          IconButton(icon: const Icon(Icons.paste), tooltip: '粘贴', onPressed: _paste),
         ],
       ),
-      body: Column(
-        children: [
-          if (_loading)
-            const Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Starting onboarding...'),
-                  ],
-                ),
-              ),
-            )
-          else if (_error != null)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _loading = true;
-                            _error = null;
-                            _finished = false;
-                          });
-                          _startOnboarding();
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else ...[
-            Expanded(
-              child: RepaintBoundary(
-                key: _screenshotKey,
-                child: TerminalView(
-                  _terminal,
-                  controller: _controller,
-                  textStyle: const TerminalStyle(
-                    fontSize: 11,
-                    height: 1.0,
-                    fontFamily: 'DejaVuSansMono',
-                    fontFamilyFallback: _fontFallback,
-                  ),
-                  onTapUp: _handleTap,
-                ),
-              ),
-            ),
-            TerminalToolbar(
-              pty: _pty,
-              ctrlNotifier: _ctrlNotifier,
-              altNotifier: _altNotifier,
-            ),
-          ],
-          if (_finished)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: widget.isFirstRun
-                      ? _goToDashboard
-                      : () => Navigator.of(context).pop(),
-                  icon: Icon(widget.isFirstRun
-                      ? Icons.arrow_forward
-                      : Icons.check),
-                  label: Text(widget.isFirstRun
-                      ? 'Go to Dashboard'
-                      : 'Done'),
-                ),
-              ),
-            ),
+      body: Column(children: [
+        if (_loading)
+          Expanded(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text('正在启动配置...', style: TextStyle(color: Colors.grey.shade400))]))))
+        else if (_error != null)
+          Expanded(child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error), const SizedBox(height: 16),
+            Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.error)), const SizedBox(height: 16),
+            FilledButton.icon(onPressed: () { setState(() { _loading = true; _error = null; _finished = false; }); _startOnboarding(); }, icon: const Icon(Icons.refresh), label: const Text('重试')),
+          ]))))
+        else ...[
+          Expanded(child: RepaintBoundary(key: _screenshotKey, child: TerminalView(_terminal, controller: _controller, textStyle: const TerminalStyle(fontSize: 11, height: 1.0, fontFamily: 'DejaVuSansMono', fontFamilyFallback: _fontFallback), onTapUp: _handleTap))),
+          TerminalToolbar(pty: _pty, ctrlNotifier: _ctrlNotifier, altNotifier: _altNotifier),
         ],
-      ),
+        if (_finished)
+          Padding(padding: const EdgeInsets.all(16), child: SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: widget.isFirstRun ? _goToDashboard : () => Navigator.of(context).pop(),
+            icon: Icon(widget.isFirstRun ? Icons.arrow_forward : Icons.check),
+            label: Text(widget.isFirstRun ? '进入仪表盘' : '完成'),
+            style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
+          ))),
+      ]),
     );
   }
 }

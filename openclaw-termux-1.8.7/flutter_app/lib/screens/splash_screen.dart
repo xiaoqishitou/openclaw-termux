@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../app.dart';
 import '../constants.dart';
 import '../services/native_bridge.dart';
 import '../services/preferences_service.dart';
@@ -17,29 +18,54 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  String _status = 'Loading...';
+    with TickerProviderStateMixin {
+  String _status = '正在加载...';
   late final AnimationController _fadeController;
+  late final AnimationController _scaleController;
+  late final AnimationController _pulseController;
   late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleController = AnimationController(
+      vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
     );
+    _scaleAnimation = CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _fadeController.forward();
+    _scaleController.forward();
+    _pulseController.repeat(reverse: true);
     _checkAndRoute();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
+    _scaleController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -47,10 +73,9 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 500));
 
     try {
-      setState(() => _status = 'Checking setup status...');
+      setState(() => _status = '正在检查安装状态...');
 
       // Ensure directories and resolv.conf exist on every app open.
-      // Android may clear the files directory during update or reinstall (#40).
       try { await NativeBridge.setupDirs(); } catch (_) {}
       try { await NativeBridge.writeResolv(); } catch (_) {}
 
@@ -64,7 +89,6 @@ class _SplashScreenState extends State<SplashScreen>
           Directory(configDir).createSync(recursive: true);
           resolvFile.writeAsStringSync(resolvContent);
         }
-        // Also write into rootfs /etc/ so DNS works even if bind-mount fails
         final rootfsResolv = File('$filesDir/rootfs/ubuntu/etc/resolv.conf');
         if (!rootfsResolv.existsSync()) {
           rootfsResolv.parent.createSync(recursive: true);
@@ -115,8 +139,7 @@ class _SplashScreenState extends State<SplashScreen>
         setupComplete = false;
       }
 
-      // Auto-repair: if the rootfs and bash exist but other components are
-      // missing, try to repair them instead of forcing full re-setup (#70, #73, #97).
+      // Auto-repair
       if (!setupComplete) {
         try {
           final status = await NativeBridge.getBootstrapStatus();
@@ -126,17 +149,13 @@ class _SplashScreenState extends State<SplashScreen>
           final openclawOk = status['openclawInstalled'] == true;
           final bypassOk = status['bypassInstalled'] == true;
 
-          // Core rootfs must exist — can't repair without it
           if (rootfsOk && bashOk) {
-            // Regenerate bionic bypass if missing
             if (!bypassOk) {
-              setState(() => _status = 'Repairing bionic bypass...');
+              setState(() => _status = '正在修复 Bionic 补丁...');
               await NativeBridge.installBionicBypass();
             }
-
-            // Reinstall node if binary is missing (#97)
             if (!nodeOk) {
-              setState(() => _status = 'Reinstalling Node.js...');
+              setState(() => _status = '正在重装 Node.js...');
               try {
                 final arch = await NativeBridge.getArch();
                 final nodeTarUrl = AppConstants.getNodeTarballUrl(arch);
@@ -147,10 +166,8 @@ class _SplashScreenState extends State<SplashScreen>
                 await NativeBridge.extractNodeTarball(nodeTarPath);
               } catch (_) {}
             }
-
-            // Reinstall openclaw if package.json is missing (#97)
             if (!openclawOk && nodeOk) {
-              setState(() => _status = 'Reinstalling OpenClaw...');
+              setState(() => _status = '正在重装 OpenClaw...');
               try {
                 const wrapper = '/root/.openclaw/node-wrapper.js';
                 const nodeRun = 'node $wrapper';
@@ -162,7 +179,6 @@ class _SplashScreenState extends State<SplashScreen>
                 await NativeBridge.createBinWrappers('openclaw');
               } catch (_) {}
             }
-
             setupComplete = await NativeBridge.isBootstrapComplete();
           }
         } catch (_) {}
@@ -182,57 +198,114 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _status = 'Error: $e');
+        setState(() => _status = '错误：$e');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/ic_launcher.png',
-                width: 80,
-                height: 80,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'OpenClaw',
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: Theme.of(context).colorScheme.onSurface,
+      body: Container(
+        decoration: isDark
+            ? const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0D0D0D), Color(0xFF1A1A2E), Color(0xFF0D0D0D)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'AI Gateway for Android',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              )
+            : null,
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated logo
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: ScaleTransition(
+                    scale: _pulseAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.accent, AppColors.accentLight],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withAlpha(40),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/ic_launcher.png',
+                        width: 64,
+                        height: 64,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'by ${AppConstants.authorName} | ${AppConstants.orgName}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                const SizedBox(height: 28),
+                Text(
+                  'OpenClaw',
+                  style: GoogleFonts.inter(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                _status,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withAlpha(15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'AI 网关 · Android',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'by ${AppConstants.authorName} | ${AppConstants.orgName}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.accent.withAlpha(180),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _status,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

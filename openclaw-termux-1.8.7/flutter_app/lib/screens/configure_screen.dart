@@ -199,7 +199,7 @@ class _ConfigureScreenState extends State<ConfigureScreen> {
     if (url != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Copied to clipboard'),
+          content: const Text('已复制到剪贴板'),
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: 'Open',
@@ -236,7 +236,7 @@ class _ConfigureScreenState extends State<ConfigureScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('No URL found in selection'),
+        content: Text('选中内容未包含 URL'),
         duration: Duration(seconds: 1),
       ),
     );
@@ -304,7 +304,7 @@ class _ConfigureScreenState extends State<ConfigureScreen> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Starting configure...'),
+                    Text('正在启动配置...'),
                   ],
                 ),
               ),
@@ -339,7 +339,7 @@ class _ConfigureScreenState extends State<ConfigureScreen> {
                           _startConfigure();
                         },
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
+                        label: const Text('重试'),
                       ),
                     ],
                   ),
@@ -376,7 +376,7 @@ class _ConfigureScreenState extends State<ConfigureScreen> {
                 child: FilledButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.check),
-                  label: const Text('Done'),
+                  label: const Text('完成'),
                 ),
               ),
             ),
