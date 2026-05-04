@@ -1,4 +1,4 @@
-package com.nxg.openclawproot
+package com.xiaoqi.openclawproot
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -655,7 +655,7 @@ if (script) {
 'use strict';
 
 // ====================================================================
-// 1. process.cwd() â€” getcwd() returns ENOSYS in proot
+// 1. process.cwd() â€?getcwd() returns ENOSYS in proot
 // ====================================================================
 const _origCwd = process.cwd;
 process.cwd = function() {
@@ -664,18 +664,18 @@ process.cwd = function() {
 };
 
 // ====================================================================
-// 2. os module patches â€” various /proc reads fail in proot
+// 2. os module patches â€?various /proc reads fail in proot
 // ====================================================================
 const _os = require('os');
 
-// os.hostname() â€” may fail reading /proc/sys/kernel/hostname
+// os.hostname() â€?may fail reading /proc/sys/kernel/hostname
 const _origHostname = _os.hostname;
 _os.hostname = function() {
   try { return _origHostname.call(_os); }
   catch(e) { return 'localhost'; }
 };
 
-// os.tmpdir() â€” ensure it returns /tmp
+// os.tmpdir() â€?ensure it returns /tmp
 const _origTmpdir = _os.tmpdir;
 _os.tmpdir = function() {
   try {
@@ -684,14 +684,14 @@ _os.tmpdir = function() {
   } catch(e) { return '/tmp'; }
 };
 
-// os.homedir() â€” may fail with ENOSYS
+// os.homedir() â€?may fail with ENOSYS
 const _origHomedir = _os.homedir;
 _os.homedir = function() {
   try { return _origHomedir.call(_os); }
   catch(e) { return process.env.HOME || '/root'; }
 };
 
-// os.userInfo() â€” getpwuid may fail in proot
+// os.userInfo() â€?getpwuid may fail in proot
 const _origUserInfo = _os.userInfo;
 _os.userInfo = function(opts) {
   try { return _origUserInfo.call(_os, opts); }
@@ -705,7 +705,7 @@ _os.userInfo = function(opts) {
   }
 };
 
-// os.cpus() â€” reading /proc/cpuinfo may fail
+// os.cpus() â€?reading /proc/cpuinfo may fail
 const _origCpus = _os.cpus;
 _os.cpus = function() {
   try {
@@ -715,7 +715,7 @@ _os.cpus = function() {
   return [{ model: 'ARM', speed: 2000, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } }];
 };
 
-// os.totalmem() / os.freemem() â€” reading /proc/meminfo may fail
+// os.totalmem() / os.freemem() â€?reading /proc/meminfo may fail
 const _origTotalmem = _os.totalmem;
 _os.totalmem = function() {
   try { return _origTotalmem.call(_os); }
@@ -727,7 +727,7 @@ _os.freemem = function() {
   catch(e) { return 2 * 1024 * 1024 * 1024; }
 };
 
-// os.networkInterfaces() â€” Android blocks getifaddrs()
+// os.networkInterfaces() â€?Android blocks getifaddrs()
 const _origNetIf = _os.networkInterfaces;
 _os.networkInterfaces = function() {
   try {
@@ -743,7 +743,7 @@ _os.networkInterfaces = function() {
 };
 
 // ====================================================================
-// 3. fs.mkdir â€” mkdirat() returns ENOSYS in proot
+// 3. fs.mkdir â€?mkdirat() returns ENOSYS in proot
 // ====================================================================
 const _fs = require('fs');
 const _path = require('path');
@@ -786,7 +786,7 @@ if (_fsp) {
 }
 
 // ====================================================================
-// 4. fs.rename â€” renameat2() may ENOSYS in proot; fallback to copy+unlink
+// 4. fs.rename â€?renameat2() may ENOSYS in proot; fallback to copy+unlink
 // ====================================================================
 const _origRenameSync = _fs.renameSync;
 _fs.renameSync = function(oldPath, newPath) {
@@ -828,7 +828,7 @@ if (_fsp) {
 }
 
 // ====================================================================
-// 5. fs.chmod/chown â€” fchmodat/fchownat may fail; tolerate ENOSYS
+// 5. fs.chmod/chown â€?fchmodat/fchownat may fail; tolerate ENOSYS
 // ====================================================================
 for (const fn of ['chmod', 'chown', 'lchown']) {
   const origSync = _fs[fn + 'Sync'];
@@ -850,7 +850,7 @@ for (const fn of ['chmod', 'chown', 'lchown']) {
 }
 
 // ====================================================================
-// 6. fs.watch â€” inotify may fail; provide silent no-op fallback
+// 6. fs.watch â€?inotify may fail; provide silent no-op fallback
 // ====================================================================
 const _origWatch = _fs.watch;
 _fs.watch = function(filename, options, listener) {
@@ -869,7 +869,7 @@ _fs.watch = function(filename, options, listener) {
 };
 
 // ====================================================================
-// 7. child_process.spawn â€” handle ENOSYS (proot) and ENOENT (missing binary).
+// 7. child_process.spawn â€?handle ENOSYS (proot) and ENOENT (missing binary).
 //    Command-aware mock:
 //    - Side-effect cmds (git, cmake): return FAILURE (128)
 //    - Everything else: return SUCCESS (0)

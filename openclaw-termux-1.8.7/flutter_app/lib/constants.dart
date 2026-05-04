@@ -1,25 +1,21 @@
 class AppConstants {
   static const String appName = 'OpenClaw';
   static const String version = '1.8.7';
-  static const String packageName = 'com.nxg.openclawproot';
+  static const String packageName = 'com.xiaoqi.openclawproot';
 
   /// Matches ANSI escape sequences (e.g. color codes in terminal output).
   static final ansiEscape = RegExp(r'\x1b\[[0-9;]*[a-zA-Z]');
 
-  static const String authorName = 'Mithun Gowda B';
-  static const String authorEmail = 'mithungowda.b7411@gmail.com';
-  static const String githubUrl = 'https://github.com/mithun50/openclaw-termux';
+  static const String authorName = 'xiaoqi';
+  static const String authorEmail = '3155838181@qq.com';
+  static const String githubUrl = 'https://github.com/xiaoqishitou/openclaw-termux';
   static const String license = 'MIT';
 
   static const String githubApiLatestRelease =
-      'https://api.github.com/repos/mithun50/openclaw-termux/releases/latest';
+      'https://api.github.com/repos/xiaoqishitou/openclaw-termux/releases/latest';
 
-  // NextGenX
-  static const String orgName = 'NextGenX';
-  static const String orgEmail = 'nxgextra@gmail.com';
-  static const String instagramUrl = 'https://www.instagram.com/nexgenxplorer_nxg';
-  static const String youtubeUrl = 'https://youtube.com/@nexgenxplorer?si=UG-wBC8UIyeT4bbw';
-  static const String playStoreUrl = 'https://play.google.com/store/apps/dev?id=8262374975871504599';
+  static const String orgName = 'xiaoqi';
+  static const String orgEmail = '3155838181@qq.com';
 
   static const String gatewayHost = '127.0.0.1';
   static const int gatewayPort = 18789;
@@ -60,8 +56,8 @@ class AppConstants {
   static const String nodeRole = 'node';
   static const int pairingTimeoutMs = 300000;
 
-  static const String channelName = 'com.nxg.openclawproot/native';
-  static const String eventChannelName = 'com.nxg.openclawproot/gateway_logs';
+  static const String channelName = 'com.xiaoqi.openclawproot/native';
+  static const String eventChannelName = 'com.xiaoqi.openclawproot/gateway_logs';
 
   static String getRootfsUrl(String arch) {
     switch (arch) {

@@ -1,4 +1,4 @@
-package com.nxg.openclawproot
+package com.xiaoqi.openclawproot
 
 import android.os.Build
 import android.os.Environment
@@ -33,7 +33,7 @@ class ProcessManager(
 
     // ================================================================
     // Host-side environment for proot binary itself.
-    // ONLY proot-specific vars â€” guest env is set via `env -i` inside
+    // ONLY proot-specific vars â€?guest env is set via `env -i` inside
     // the command line, matching proot-distro's approach.
     // ================================================================
     private fun prootEnv(): Map<String, String> = mapOf(
@@ -53,7 +53,7 @@ class ProcessManager(
     // ================================================================
     /**
      * Ensure resolv.conf exists before any proot invocation.
-     * This is the single chokepoint â€” every proot operation flows through
+     * This is the single chokepoint â€?every proot operation flows through
      * commonProotFlags(), so resolv.conf is guaranteed for all callers.
      */
     private fun ensureResolvConf() {
@@ -103,7 +103,7 @@ class ProcessManager(
             "--bind=/proc/self/fd/1:/dev/stdout",
             "--bind=/proc/self/fd/2:/dev/stderr",
             "--bind=/sys",
-            // Fake /proc entries â€” Android restricts most /proc access.
+            // Fake /proc entries â€?Android restricts most /proc access.
             // proot-distro's run_proot_cmd() binds these unconditionally.
             "--bind=$procFakes/loadavg:/proc/loadavg",
             "--bind=$procFakes/stat:/proc/stat",
@@ -114,9 +114,9 @@ class ProcessManager(
             "--bind=$procFakes/max_user_watches:/proc/sys/fs/inotify/max_user_watches",
             // Extra: libgcrypt reads this; missing causes apt SIGABRT
             "--bind=$procFakes/fips_enabled:/proc/sys/crypto/fips_enabled",
-            // Shared memory â€” proot-distro binds rootfs/tmp to /dev/shm
+            // Shared memory â€?proot-distro binds rootfs/tmp to /dev/shm
             "--bind=$rootfsDir/tmp:/dev/shm",
-            // SELinux override â€” empty dir disables SELinux checks
+            // SELinux override â€?empty dir disables SELinux checks
             "--bind=$sysFakes/empty:/sys/fs/selinux",
             // App-specific binds
             "--bind=$configDir/resolv.conf:/etc/resolv.conf",
@@ -135,7 +135,7 @@ class ProcessManager(
             if (hasAccess) {
                 val storageDir = File("$rootfsDir/storage")
                 storageDir.mkdirs()
-                // Create /sdcard symlink â†’ /storage/emulated/0 inside rootfs
+                // Create /sdcard symlink â†?/storage/emulated/0 inside rootfs
                 val sdcardLink = File("$rootfsDir/sdcard")
                 if (!sdcardLink.exists()) {
                     try {
@@ -158,7 +158,7 @@ class ProcessManager(
     }
 
     // ================================================================
-    // INSTALL MODE â€” matches proot-distro's run_proot_cmd()
+    // INSTALL MODE â€?matches proot-distro's run_proot_cmd()
     // Used for: apt-get, dpkg, npm install, chmod, etc.
     // Simpler: no --sysvipc, simple kernel-release, minimal guest env.
     // ================================================================
@@ -191,7 +191,7 @@ class ProcessManager(
     }
 
     // ================================================================
-    // GATEWAY MODE â€” matches proot-distro's command_login()
+    // GATEWAY MODE â€?matches proot-distro's command_login()
     // Used for: running openclaw gateway (long-lived Node.js process).
     // Full featured: --sysvipc, full uname struct, more guest env vars.
     // ================================================================

@@ -1,4 +1,4 @@
-package com.nxg.openclawproot
+package com.xiaoqi.openclawproot
 
 import android.os.Build
 

@@ -252,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     title: const Text('GitHub'),
-                    subtitle: const Text('mithun50/openclaw-termux'),
+                    subtitle: const Text('xiaoqishitou/openclaw-termux'),
                     leading: const Icon(Icons.code_rounded),
                     trailing: const Icon(Icons.open_in_new_rounded, size: 16),
                     onTap: () => launchUrl(
@@ -280,39 +280,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 _sectionHeader(context, AppConstants.orgName, Icons.business_rounded),
                 _buildSettingsCard([
-                  ListTile(
-                    title: const Text('Instagram'),
-                    subtitle: const Text('@nexgenxplorer_nxg'),
-                    leading: const Icon(Icons.camera_alt_rounded),
-                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
-                    onTap: () => launchUrl(
-                      Uri.parse(AppConstants.instagramUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    title: const Text('YouTube'),
-                    subtitle: const Text('@nexgenxplorer'),
-                    leading: const Icon(Icons.play_circle_fill_rounded),
-                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
-                    onTap: () => launchUrl(
-                      Uri.parse(AppConstants.youtubeUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    title: const Text('Play Store'),
-                    subtitle: const Text('NextGenX Apps'),
-                    leading: const Icon(Icons.shop_rounded),
-                    trailing: const Icon(Icons.open_in_new_rounded, size: 16),
-                    onTap: () => launchUrl(
-                      Uri.parse(AppConstants.playStoreUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  ),
-                  const Divider(height: 1),
                   ListTile(
                     title: const Text('Email'),
                     subtitle: const Text(AppConstants.orgEmail),
