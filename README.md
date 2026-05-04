@@ -56,14 +56,13 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 
 <table align="center">
   <tr>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/dashboard.png" alt="Dashboard" width="220"/><br/><b>仪表盘 Dashboard</b></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/setupscreen.png" alt="Setup" width="220"/><br/><b>配置向导 Setup Wizard</b></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/onboardingscreen.png" alt="Onboarding" width="220"/><br/><b>初始配置 Onboarding</b></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/74bee1e3d2fcb043303b2b57c902dd25_750.png" alt="Screenshot" width="220"/></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/7e0eeb8b03be1283ea0ba3be55ee2381_750.png" alt="Screenshot" width="220"/></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/f9a397a4ba9eda08d0b509b83390ac37_750.png" alt="Screenshot" width="220"/></td>
   </tr>
   <tr>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/websscreen.png" alt="Web Dashboard" width="220"/><br/><b>Web 仪表盘</b></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/logscreen.png" alt="Logs" width="220"/><b>日志查看器 Logs</b></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/settingsscreen.png" alt="Settings" width="220"/><b>设置 Settings</b></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-12-33-35-85_28fb852a46ed910.jpg" alt="Screenshot" width="220"/></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-12-43-27-06_28fb852a46ed910.jpg" alt="Screenshot" width="220"/></td>
   </tr>
 </table>
 
