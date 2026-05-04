@@ -34,7 +34,7 @@ class _LogsScreenState extends State<LogsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('网关日志', centerTitle: true),
+        title: const Text('网关日志'),
         actions: [
           IconButton(icon: const Icon(Icons.camera_alt_outlined), tooltip: '截图', onPressed: _takeScreenshot),
           IconButton(

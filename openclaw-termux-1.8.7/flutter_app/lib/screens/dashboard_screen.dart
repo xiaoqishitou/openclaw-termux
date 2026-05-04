@@ -7,7 +7,6 @@ import '../constants.dart';
 import '../providers/gateway_provider.dart';
 import '../providers/node_provider.dart';
 import '../widgets/gateway_controls.dart';
-import '../widgets/status_card.dart';
 import 'node_screen.dart';
 import 'configure_screen.dart';
 import 'onboarding_screen.dart';

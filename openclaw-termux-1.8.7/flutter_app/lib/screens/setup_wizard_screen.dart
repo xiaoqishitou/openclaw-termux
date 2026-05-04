@@ -225,7 +225,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
           const SizedBox(height: 20),
           Row(
             children: [
-              Icon(Icons.extension_rounded, size: 16, color: AppColors.mutedText),
+              const Icon(Icons.extension_rounded, size: 16, color: AppColors.mutedText),
               const SizedBox(width: 8),
               Text(
                 '可选软件包',

@@ -192,4 +192,8 @@ class NativeBridge {
   static Future<bool> setRootPassword(String password) async {
     return await _channel.invokeMethod('setRootPassword', {'password': password});
   }
+
+  static Future<bool> copyBundledAsset(String assetPath, String destPath) async {
+    return await _channel.invokeMethod('copyBundledAsset', {'assetPath': assetPath, 'destPath': destPath});
+  }
 }

@@ -17,10 +17,18 @@ subprojects {
     // references flutter.compileSdkVersion before the Flutter tooling injects it.
     if (project.name != "app") {
         project.ext.set("flutter", [
-            compileSdkVersion: 35,
+            compileSdkVersion: 36,
             minSdkVersion: 29,
             targetSdkVersion: 36
         ])
+    }
+    // Fix for AGP 8.7+ - ensure all subprojects have NDK version set
+    afterEvaluate {
+        if (project.hasProperty('android')) {
+            project.android {
+                ndkVersion = "27.0.12077973"
+            }
+        }
     }
 }
 

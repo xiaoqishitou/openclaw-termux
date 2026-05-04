@@ -84,14 +84,36 @@ class BootstrapService {
       } catch (_) {}
       final tarPath = '$filesDir/tmp/ubuntu-rootfs.tar.gz';
 
-      _updateSetupNotification('Downloading Ubuntu rootfs...', progress: 5);
-      onProgress(const SetupState(
-        step: SetupStep.downloadingRootfs,
-        progress: 0.0,
-        message: 'Downloading Ubuntu rootfs...',
-      ));
+      // Try to use bundled rootfs asset first (offline-friendly)
+      final rootfsAssetName = _getBundledRootfsAsset(arch);
+      bool usedBundledRootfs = false;
+      try {
+        _updateSetupNotification('Preparing Ubuntu rootfs...', progress: 5);
+        onProgress(const SetupState(
+          step: SetupStep.downloadingRootfs,
+          progress: 0.0,
+          message: 'Preparing Ubuntu rootfs (bundled)...',
+        ));
+        final copied = await NativeBridge.copyBundledAsset(rootfsAssetName, tarPath);
+        if (copied) {
+          usedBundledRootfs = true;
+          onProgress(const SetupState(
+            step: SetupStep.downloadingRootfs,
+            progress: 1.0,
+            message: 'Ubuntu rootfs ready (from bundle)',
+          ));
+        }
+      } catch (_) {}
 
-      await _dio.download(
+      if (!usedBundledRootfs) {
+        _updateSetupNotification('Downloading Ubuntu rootfs...', progress: 5);
+        onProgress(const SetupState(
+          step: SetupStep.downloadingRootfs,
+          progress: 0.0,
+          message: 'Downloading Ubuntu rootfs...',
+        ));
+
+        await _dio.download(
         rootfsUrl,
         tarPath,
         onReceiveProgress: (received, total) {
@@ -110,6 +132,7 @@ class BootstrapService {
           }
         },
       );
+      } // end if !usedBundledRootfs
 
       // Step 2: Extract rootfs (30-45%)
       _updateSetupNotification('Extracting rootfs...', progress: 30);
@@ -197,31 +220,54 @@ class BootstrapService {
       final nodeTarUrl = AppConstants.getNodeTarballUrl(arch);
       final nodeTarPath = '$filesDir/tmp/nodejs.tar.xz';
 
-      onProgress(const SetupState(
-        step: SetupStep.installingNode,
-        progress: 0.3,
-        message: 'Downloading Node.js ${AppConstants.nodeVersion}...',
-      ));
-      _updateSetupNotification('Downloading Node.js...', progress: 55);
-      await _dio.download(
-        nodeTarUrl,
-        nodeTarPath,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            final progress = 0.3 + (received / total) * 0.4;
-            final mb = (received / 1024 / 1024).toStringAsFixed(1);
-            final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
-            // Map Node download to 55-70% of overall
-            final notifProgress = 55 + ((received / total) * 15).round();
-            _updateSetupNotification('Downloading Node.js: $mb / $totalMb MB', progress: notifProgress);
-            onProgress(SetupState(
-              step: SetupStep.installingNode,
-              progress: progress,
-              message: 'Downloading Node.js: $mb MB / $totalMb MB',
-            ));
-          }
-        },
-      );
+      // Try to use bundled Node.js asset first (offline-friendly)
+      final nodeAssetName = _getBundledNodeAsset(arch);
+      bool usedBundledNode = false;
+      try {
+        onProgress(const SetupState(
+          step: SetupStep.installingNode,
+          progress: 0.3,
+          message: 'Preparing Node.js ${AppConstants.nodeVersion} (bundled)...',
+        ));
+        _updateSetupNotification('Preparing Node.js...', progress: 55);
+        final copied = await NativeBridge.copyBundledAsset(nodeAssetName, nodeTarPath);
+        if (copied) {
+          usedBundledNode = true;
+          onProgress(const SetupState(
+            step: SetupStep.installingNode,
+            progress: 0.7,
+            message: 'Node.js ready (from bundle)',
+          ));
+        }
+      } catch (_) {}
+
+      if (!usedBundledNode) {
+        onProgress(const SetupState(
+          step: SetupStep.installingNode,
+          progress: 0.3,
+          message: 'Downloading Node.js ${AppConstants.nodeVersion}...',
+        ));
+        _updateSetupNotification('Downloading Node.js...', progress: 55);
+        await _dio.download(
+          nodeTarUrl,
+          nodeTarPath,
+          onReceiveProgress: (received, total) {
+            if (total > 0) {
+              final progress = 0.3 + (received / total) * 0.4;
+              final mb = (received / 1024 / 1024).toStringAsFixed(1);
+              final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
+              // Map Node download to 55-70% of overall
+              final notifProgress = 55 + ((received / total) * 15).round();
+              _updateSetupNotification('Downloading Node.js: $mb / $totalMb MB', progress: notifProgress);
+              onProgress(SetupState(
+                step: SetupStep.installingNode,
+                progress: progress,
+                message: 'Downloading Node.js: $mb MB / $totalMb MB',
+              ));
+            }
+          },
+        );
+      } // end if !usedBundledNode
 
       _updateSetupNotification('Extracting Node.js...', progress: 72);
       onProgress(const SetupState(
@@ -259,11 +305,35 @@ class BootstrapService {
         progress: 0.0,
         message: 'Installing OpenClaw (this may take a few minutes)...',
       ));
+
+      // Try to use bundled openclaw tarball first (offline-friendly)
+      final openclawTarPath = '$filesDir/tmp/openclaw-2026.5.2.tgz';
+      bool usedBundledOpenclaw = false;
+      try {
+        _updateSetupNotification('Preparing OpenClaw...', progress: 82);
+        final copied = await NativeBridge.copyBundledAsset('assets/bundle/openclaw-2026.5.2.tgz', openclawTarPath);
+        if (copied) {
+          usedBundledOpenclaw = true;
+          onProgress(const SetupState(
+            step: SetupStep.installingOpenClaw,
+            progress: 0.1,
+            message: 'Installing OpenClaw from bundle...',
+          ));
+        }
+      } catch (_) {}
+
       // Install openclaw — fork/exec works now with our Termux-matching proot.
-      await NativeBridge.runInProot(
-        '$nodeRun $npmCli install -g openclaw',
-        timeout: 1800,
-      );
+      if (usedBundledOpenclaw) {
+        await NativeBridge.runInProot(
+          '$nodeRun $npmCli install -g "$openclawTarPath"',
+          timeout: 1800,
+        );
+      } else {
+        await NativeBridge.runInProot(
+          '$nodeRun $npmCli install -g openclaw',
+          timeout: 1800,
+        );
+      }
 
       _updateSetupNotification('Creating bin wrappers...', progress: 92);
       onProgress(const SetupState(
@@ -316,6 +386,32 @@ class BootstrapService {
         step: SetupStep.error,
         error: 'Setup failed: $e',
       ));
+    }
+  }
+
+  static String _getBundledRootfsAsset(String arch) {
+    switch (arch) {
+      case 'aarch64':
+        return 'assets/bundle/ubuntu-base-24.04-arm64.tar.gz';
+      case 'arm':
+        return 'assets/bundle/ubuntu-base-24.04-armhf.tar.gz';
+      case 'x86_64':
+        return 'assets/bundle/ubuntu-base-24.04-amd64.tar.gz';
+      default:
+        return 'assets/bundle/ubuntu-base-24.04-arm64.tar.gz';
+    }
+  }
+
+  static String _getBundledNodeAsset(String arch) {
+    switch (arch) {
+      case 'aarch64':
+        return 'assets/bundle/node-v${AppConstants.nodeVersion}-linux-arm64.tar.xz';
+      case 'arm':
+        return 'assets/bundle/node-v${AppConstants.nodeVersion}-linux-armv7l.tar.xz';
+      case 'x86_64':
+        return 'assets/bundle/node-v${AppConstants.nodeVersion}-linux-x64.tar.xz';
+      default:
+        return 'assets/bundle/node-v${AppConstants.nodeVersion}-linux-arm64.tar.xz';
     }
   }
 }

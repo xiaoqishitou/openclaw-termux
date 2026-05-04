@@ -132,7 +132,7 @@ class OpenClawApp extends StatelessWidget {
           color: AppColors.darkTextPrimary,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.darkSurface,
         shape: RoundedRectangleBorder(
@@ -206,7 +206,7 @@ class OpenClawApp extends StatelessWidget {
         color: AppColors.darkBorder,
         space: 1,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.darkSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -280,7 +280,7 @@ class OpenClawApp extends StatelessWidget {
           color: const Color(0xFF1A1A1A),
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 1,
         color: AppColors.lightSurface,
         shadowColor: Colors.black.withAlpha(10),
@@ -355,7 +355,7 @@ class OpenClawApp extends StatelessWidget {
         color: AppColors.lightBorder,
         space: 1,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.lightSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),

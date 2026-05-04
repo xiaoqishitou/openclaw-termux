@@ -35,7 +35,7 @@ class AppConstants {
   // Bypasses curl/gpg/NodeSource which fail inside proot.
   static const String nodeVersion = '22.14.0';
   static const String nodeBaseUrl =
-      'https://nodejs.org/dist/v$nodeVersion/node-v$nodeVersion-linux-';
+      'https://registry.npmmirror.com/-/binary/node/v$nodeVersion/node-v$nodeVersion-linux-';
 
   static String getNodeTarballUrl(String arch) {
     switch (arch) {

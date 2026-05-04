@@ -1,0 +1,87 @@
+Running Gradle task 'assembleRelease'...                        
+Warning: Flutter support for your project's Kotlin version (1.9.22) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.1.0 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (C:\Users\xiaoqi\Desktop\app\openclaw-termux\openclaw-termux-1.8.7\flutter_app\android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (C:\Users\xiaoqi\Desktop\app\openclaw-termux\openclaw-termux-1.8.7\flutter_app\android/build.gradle) by the ext.kotlin_version property.
+
+lib/screens/onboarding_screen.dart:227:30: Error: Can't find ']' to match '['.
+      body: Column(children: [
+                             ^
+lib/screens/package_install_screen.dart:96:30: Error: Can't find ']' to match '['.
+      body: Column(children: [
+                             ^
+lib/app.dart:135:18: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+ - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('/F:/flutter/packages/flutter/lib/src/material/card_theme.dart').
+ - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('/F:/flutter/packages/flutter/lib/src/material/card_theme.dart').
+      cardTheme: CardTheme(
+                 ^
+lib/app.dart:283:18: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+ - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('/F:/flutter/packages/flutter/lib/src/material/card_theme.dart').
+ - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('/F:/flutter/packages/flutter/lib/src/material/card_theme.dart').
+      cardTheme: CardTheme(
+                 ^
+lib/screens/onboarding_screen.dart:230:9: Error: Expected ')' before this.
+        else if (_error != null)
+        ^^^^
+lib/screens/onboarding_screen.dart:247:8: Error: Expected ';' after this.
+      ]),
+       ^
+lib/screens/onboarding_screen.dart:247:9: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+      ]),
+        ^
+lib/screens/onboarding_screen.dart:247:9: Error: Unexpected token ';'.
+      ]),
+        ^
+lib/screens/onboarding_screen.dart:248:5: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+    );
+    ^
+lib/screens/onboarding_screen.dart:247:9: Error: Expected ';' after this.
+      ]),
+        ^
+lib/screens/onboarding_screen.dart:248:5: Error: Unexpected token ';'.
+    );
+    ^
+lib/screens/package_install_screen.dart:99:9: Error: Expected ')' before this.
+        else if (_error != null)
+        ^^^^
+lib/screens/package_install_screen.dart:114:8: Error: Expected ';' after this.
+      ]),
+       ^
+lib/screens/package_install_screen.dart:114:9: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+      ]),
+        ^
+lib/screens/package_install_screen.dart:114:9: Error: Unexpected token ';'.
+      ]),
+        ^
+lib/screens/package_install_screen.dart:115:5: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+    );
+    ^
+lib/screens/package_install_screen.dart:114:9: Error: Expected ';' after this.
+      ]),
+        ^
+lib/screens/package_install_screen.dart:115:5: Error: Unexpected token ';'.
+    );
+    ^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command 'F:\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10s
+Running Gradle task 'assembleRelease'...                           10.8s
+Gradle task assembleRelease failed with exit code 1

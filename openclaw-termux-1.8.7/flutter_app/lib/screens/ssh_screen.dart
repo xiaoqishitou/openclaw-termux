@@ -124,7 +124,7 @@ class _SshScreenState extends State<SshScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(color: AppColors.iconSsh.withAlpha(15), shape: BoxShape.circle),
-              child: Icon(Icons.vpn_key, size: 56, color: AppColors.iconSsh),
+              child: const Icon(Icons.vpn_key, size: 56, color: AppColors.iconSsh),
             ),
             const SizedBox(height: 20),
             Text('未安装 OpenSSH', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
@@ -191,7 +191,7 @@ class _SshScreenState extends State<SshScreen> {
                 ),
                 const SizedBox(height: 18),
                 if (!_running)
-                  TextField(controller: _portController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: '端口', hintText: '8022')),
+                  TextField(controller: _portController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: '端口', hintText: '8022')),
                 if (!_running) const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
@@ -199,7 +199,7 @@ class _SshScreenState extends State<SshScreen> {
                   child: _running
                       ? OutlinedButton(
                           onPressed: _toggling ? null : _toggleSshd,
-                          style: OutlinedButtonStyleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                           child: _toggling ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('停止服务', style: TextStyle(fontWeight: FontWeight.w600))
                         )
                       : FilledButton(

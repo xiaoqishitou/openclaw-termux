@@ -82,7 +82,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 20, color: AppColors.iconPackages),
+                      const Icon(Icons.info_outline, size: 20, color: AppColors.iconPackages),
                       const SizedBox(width: 12),
                       Expanded(child: Text('可在 Ubuntu 环境中安装的开发工具', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.iconPackages))),
                     ],
@@ -163,7 +163,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                 installed
                     ? OutlinedButton(
                         onPressed: () => _confirmUninstall(package),
-                        style: OutlinedButtonStyleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8)),
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8)),
                         child: const Text('卸载', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
                       )
                     : FilledButton(

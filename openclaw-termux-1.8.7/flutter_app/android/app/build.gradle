@@ -35,16 +35,16 @@ def hasKeystore = keystoreProperties.containsKey('storeFile') &&
 
 android {
     namespace = "com.nxg.openclawproot"
-    compileSdk = 35
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -81,6 +81,14 @@ android {
         jniLibs {
             useLegacyPackaging = true
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.8.0'
+        force 'androidx.core:core:1.15.0'
+        force 'androidx.core:core-ktx:1.15.0'
     }
 }
 

@@ -66,9 +66,10 @@ class ProviderConfigService {
     final baseUrlJson = jsonEncode(provider.baseUrl);
     final modelJson = jsonEncode(model);
 
-    // Build the provider object with the model as an object containing `id`,
-    // not a bare string. OpenClaw expects: models: [{ id: "model-name" }].
-    // Writing a bare string causes config validation failure (#83, #88).
+    // Build the provider object with the model as an object containing `id`
+    // AND `name`. OpenClaw's config validation requires both fields:
+    //   models: [{ id: "model-name", name: "model-name" }].
+    // Writing only `id` causes: "models.0.name: expected string, received undefined"
     final script = '''
 const fs = require("fs");
 const p = "$_configPath";
@@ -79,7 +80,7 @@ if (!c.models.providers) c.models.providers = {};
 c.models.providers[$providerIdJson] = {
   apiKey: $apiKeyJson,
   baseUrl: $baseUrlJson,
-  models: [{ id: $modelJson }]
+  models: [{ id: $modelJson, name: $modelJson }]
 };
 if (!c.agents) c.agents = {};
 if (!c.agents.defaults) c.agents.defaults = {};
@@ -123,13 +124,14 @@ fs.writeFileSync(p, JSON.stringify(c, null, 2));
       // Start fresh
     }
 
-    // Merge provider entry — models must be objects with `id`, not bare strings (#83, #88).
+    // Merge provider entry — models must be objects with `id` AND `name`
+    // (OpenClaw validation requires both; #83, #88, config validation error).
     config['models'] ??= <String, dynamic>{};
     (config['models'] as Map<String, dynamic>)['providers'] ??= <String, dynamic>{};
     ((config['models'] as Map<String, dynamic>)['providers'] as Map<String, dynamic>)[providerId] = {
       'apiKey': apiKey,
       'baseUrl': baseUrl,
-      'models': [{'id': model}],
+      'models': [{'id': model, 'name': model}],
     };
 
     // Set active model
