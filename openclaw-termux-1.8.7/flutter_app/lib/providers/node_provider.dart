@@ -12,6 +12,12 @@ import '../services/capabilities/screen_capability.dart';
 import '../services/capabilities/sensor_capability.dart';
 import '../services/capabilities/serial_capability.dart';
 import '../services/capabilities/vibration_capability.dart';
+import '../services/capabilities/filesystem_capability.dart';
+import '../services/capabilities/apps_capability.dart';
+import '../services/capabilities/clipboard_capability.dart';
+import '../services/capabilities/flashlight_capability.dart';
+import '../services/capabilities/deviceinfo_capability.dart';
+import '../services/capabilities/contacts_capability.dart';
 import '../services/native_bridge.dart';
 import '../services/node_service.dart';
 import '../services/preferences_service.dart';
@@ -34,6 +40,12 @@ class NodeProvider extends ChangeNotifier with WidgetsBindingObserver {
   final _sensorCapability = SensorCapability();
   final _serialCapability = SerialCapability();
   final _vibrationCapability = VibrationCapability();
+  final _filesystemCapability = FilesystemCapability();
+  final _appsCapability = AppsCapability();
+  final _clipboardCapability = ClipboardCapability();
+  final _flashlightCapability = FlashlightCapability();
+  final _deviceInfoCapability = DeviceInfoCapability();
+  final _contactsCapability = ContactsCapability();
 
   NodeState get state => _state;
 
@@ -172,6 +184,36 @@ class NodeProvider extends ChangeNotifier with WidgetsBindingObserver {
       _serialCapability.commands.map((c) => '${_serialCapability.name}.$c').toList(),
       (cmd, params) => _serialCapability.handleWithPermission(cmd, params),
     );
+    _nodeService.registerCapability(
+      _filesystemCapability.name,
+      _filesystemCapability.commands.map((c) => '${_filesystemCapability.name}.$c').toList(),
+      (cmd, params) => _filesystemCapability.handleWithPermission(cmd, params),
+    );
+    _nodeService.registerCapability(
+      _appsCapability.name,
+      _appsCapability.commands.map((c) => '${_appsCapability.name}.$c').toList(),
+      (cmd, params) => _appsCapability.handle(cmd, params),
+    );
+    _nodeService.registerCapability(
+      _clipboardCapability.name,
+      _clipboardCapability.commands.map((c) => '${_clipboardCapability.name}.$c').toList(),
+      (cmd, params) => _clipboardCapability.handle(cmd, params),
+    );
+    _nodeService.registerCapability(
+      _flashlightCapability.name,
+      _flashlightCapability.commands.map((c) => '${_flashlightCapability.name}.$c').toList(),
+      (cmd, params) => _flashlightCapability.handle(cmd, params),
+    );
+    _nodeService.registerCapability(
+      _deviceInfoCapability.name,
+      _deviceInfoCapability.commands.map((c) => '${_deviceInfoCapability.name}.$c').toList(),
+      (cmd, params) => _deviceInfoCapability.handle(cmd, params),
+    );
+    _nodeService.registerCapability(
+      _contactsCapability.name,
+      _contactsCapability.commands.map((c) => '${_contactsCapability.name}.$c').toList(),
+      (cmd, params) => _contactsCapability.handleWithPermission(cmd, params),
+    );
   }
 
   Future<void> _init() async {
@@ -229,6 +271,11 @@ class NodeProvider extends ChangeNotifier with WidgetsBindingObserver {
       Permission.sensors,
       Permission.bluetoothConnect,
       Permission.bluetoothScan,
+      Permission.storage,
+      Permission.manageExternalStorage,
+      Permission.contacts,
+      Permission.phone,
+      Permission.sms,
     ].request();
   }
 

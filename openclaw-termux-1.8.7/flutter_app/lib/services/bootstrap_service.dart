@@ -46,6 +46,22 @@ class BootstrapService {
     required void Function(SetupState) onProgress,
   }) async {
     try {
+      // 检测是否在模拟器上运行
+      final isEmulator = await NativeBridge.isEmulator();
+      if (isEmulator) {
+        onProgress(const SetupState(
+          step: SetupStep.error,
+          error: '模拟器不支持 PRoot\n\n'
+              'OpenClaw 依赖 PRoot 运行 Linux 环境，而模拟器（尤其是 x86/x86_64 架构）'
+              '通常禁用了 ptrace 系统调用，导致 PRoot 无法工作。\n\n'
+              '解决方案：\n'
+              '1. 使用真机（ARM64 设备）运行此应用\n'
+              '2. 如果使用 Android Studio 模拟器，尝试使用 ARM64 镜像\n'
+              '3. 在模拟器设置中启用 "Emulated Performance" 的 "Auto" 或 "Hardware" 选项',
+        ));
+        return;
+      }
+
       // Start foreground service to keep app alive during setup
       try {
         await NativeBridge.startSetupService();

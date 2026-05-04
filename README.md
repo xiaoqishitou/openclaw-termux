@@ -35,9 +35,11 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 
 ## 版本信息 | Version
 
-**当前版本：v1.8.7**
+**当前版本：v1.8.8**
 
-本次更新（v1.8.7）重点包括：
+本次更新（v1.8.8）重点包括：
+- 新增 Bot 平台支持（Bot Platform）
+- 新增多种节点能力：应用管理、剪贴板、联系人、设备信息、文件系统、手电筒
 - 全局 UI 美化与中文本地化
 - 配置自动修复（解决 `gateway.mode` 和模型配置格式问题）
 - Node.js 升级至 22.14.0 LTS
@@ -235,7 +237,9 @@ openclawx setup
 
 详见 [CHANGELOG.md](openclaw-termux-1.8.7/CHANGELOG.md)。
 
-**v1.8.7 摘要：**
+**v1.8.8 摘要：**
+- 新增 Bot 平台支持
+- 新增应用管理、剪贴板、联系人、设备信息、文件系统、手电筒等节点能力
 - 全局 UI 美化与中文本地化
 - 配置自动修复（`gateway.mode=local` + 模型格式修复）
 - Node.js 22.14.0 升级

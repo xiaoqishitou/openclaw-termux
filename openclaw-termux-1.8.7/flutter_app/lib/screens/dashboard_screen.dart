@@ -17,6 +17,7 @@ import 'packages_screen.dart';
 import 'providers_screen.dart';
 import 'settings_screen.dart';
 import 'ssh_screen.dart';
+import 'bot_platforms_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -220,7 +221,7 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        // Row 5: Node & Snapshot
+                        // Row 5: Node & Bot Platforms
                         Row(
                           children: [
                             Expanded(
@@ -242,12 +243,41 @@ class DashboardScreen extends StatelessWidget {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _QuickActionCard(
+                                title: '机器人平台',
+                                subtitle: '飞书、微信、QQ 等',
+                                icon: Icons.smart_toy_rounded,
+                                color: AppColors.iconProviders,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const BotPlatformsScreen()),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        // Row 6: Snapshot
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _QuickActionCard(
                                 title: '快照',
                                 subtitle: '备份与恢复',
                                 icon: Icons.backup_rounded,
                                 color: AppColors.iconSnapshot,
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _QuickActionCard(
+                                title: '日志',
+                                subtitle: '网关输出',
+                                icon: Icons.article_outlined,
+                                color: AppColors.iconLogs,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const LogsScreen()),
                                 ),
                               ),
                             ),

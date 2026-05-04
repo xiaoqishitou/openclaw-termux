@@ -50,6 +50,15 @@ class NativeBridge {
     return await _channel.invokeMethod('isGatewayRunning');
   }
 
+  /// 检测是否在模拟器上运行
+  static Future<bool> isEmulator() async {
+    try {
+      return await _channel.invokeMethod('isEmulator');
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> setupDirs() async {
     return await _channel.invokeMethod('setupDirs');
   }
@@ -195,5 +204,100 @@ class NativeBridge {
 
   static Future<bool> copyBundledAsset(String assetPath, String destPath) async {
     return await _channel.invokeMethod('copyBundledAsset', {'assetPath': assetPath, 'destPath': destPath});
+  }
+
+  // ========== 文件系统工具 ==========
+
+  static Future<Map<String, dynamic>> listDirectory(String path) async {
+    final result = await _channel.invokeMethod('listDirectory', {'path': path});
+    return Map<String, dynamic>.from(result as Map);
+  }
+
+  static Future<String?> readFile(String path, {int? limit}) async {
+    return await _channel.invokeMethod('readFile', {'path': path, 'limit': limit});
+  }
+
+  static Future<bool> writeFile(String path, String content) async {
+    return await _channel.invokeMethod('writeFile', {'path': path, 'content': content});
+  }
+
+  static Future<bool> deleteFile(String path) async {
+    return await _channel.invokeMethod('deleteFile', {'path': path});
+  }
+
+  static Future<bool> createDirectory(String path) async {
+    return await _channel.invokeMethod('createDirectory', {'path': path});
+  }
+
+  static Future<Map<String, dynamic>> getFileInfo(String path) async {
+    final result = await _channel.invokeMethod('getFileInfo', {'path': path});
+    return Map<String, dynamic>.from(result as Map);
+  }
+
+  // ========== 应用管理工具 ==========
+
+  static Future<List<dynamic>> getInstalledApps() async {
+    final result = await _channel.invokeMethod('getInstalledApps');
+    return List<dynamic>.from(result);
+  }
+
+  static Future<bool> launchApp(String packageName) async {
+    return await _channel.invokeMethod('launchApp', {'packageName': packageName});
+  }
+
+  static Future<bool> openUrl(String url) async {
+    return await _channel.invokeMethod('openUrl', {'url': url});
+  }
+
+  // ========== 剪贴板工具 ==========
+
+  static Future<String?> getClipboardText() async {
+    return await _channel.invokeMethod('getClipboardText');
+  }
+
+  static Future<bool> setClipboardText(String text) async {
+    return await _channel.invokeMethod('setClipboardText', {'text': text});
+  }
+
+  // ========== 手电筒工具 ==========
+
+  static Future<bool> toggleFlashlight(bool on) async {
+    return await _channel.invokeMethod('toggleFlashlight', {'on': on});
+  }
+
+  static Future<bool> isFlashlightAvailable() async {
+    return await _channel.invokeMethod('isFlashlightAvailable');
+  }
+
+  // ========== 设备信息工具 ==========
+
+  static Future<Map<String, dynamic>> getDeviceInfo() async {
+    final result = await _channel.invokeMethod('getDeviceInfo');
+    return Map<String, dynamic>.from(result as Map);
+  }
+
+  // ========== 联系人工具 ==========
+
+  static Future<List<dynamic>> getContacts() async {
+    final result = await _channel.invokeMethod('getContacts');
+    return List<dynamic>.from(result);
+  }
+
+  // ========== 通话记录工具 ==========
+
+  static Future<List<dynamic>> getCallLogs({int limit = 100}) async {
+    final result = await _channel.invokeMethod('getCallLogs', {'limit': limit});
+    return List<dynamic>.from(result);
+  }
+
+  // ========== 短信工具 ==========
+
+  static Future<List<dynamic>> getSmsMessages({int limit = 100}) async {
+    final result = await _channel.invokeMethod('getSmsMessages', {'limit': limit});
+    return List<dynamic>.from(result);
+  }
+
+  static Future<bool> sendSms(String phoneNumber, String message) async {
+    return await _channel.invokeMethod('sendSms', {'phoneNumber': phoneNumber, 'message': message});
   }
 }

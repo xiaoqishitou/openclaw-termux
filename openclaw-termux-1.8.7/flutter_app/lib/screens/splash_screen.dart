@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -76,12 +77,19 @@ class _SplashScreenState extends State<SplashScreen>
       setState(() => _status = '正在检查安装状态...');
 
       // Ensure directories and resolv.conf exist on every app open.
-      try { await NativeBridge.setupDirs(); } catch (_) {}
-      try { await NativeBridge.writeResolv(); } catch (_) {}
+      // 使用 Future.wait 并行执行 + 超时保护
+      await Future.any([
+        Future.wait([
+          NativeBridge.setupDirs().timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException('')),
+          NativeBridge.writeResolv().timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException('')),
+        ]).then((_) => true),
+        Future.delayed(const Duration(seconds: 12)).then((_) => false),
+      ]).catchError((_) => false);
 
       // Direct Dart fallback: create resolv.conf if native calls failed (#40).
       try {
-        final filesDir = await NativeBridge.getFilesDir();
+        final filesDir = await NativeBridge.getFilesDir().timeout(const Duration(seconds: 5));
+        if (filesDir == null) throw Exception('filesDir is null');
         const resolvContent = 'nameserver 8.8.8.8\nnameserver 8.8.4.4\n';
         final configDir = '$filesDir/config';
         final resolvFile = File('$configDir/resolv.conf');
@@ -103,15 +111,15 @@ class _SplashScreenState extends State<SplashScreen>
       try {
         final oldVersion = prefs.lastAppVersion;
         if (oldVersion != null && oldVersion != AppConstants.version) {
-          final hasPermission = await NativeBridge.hasStoragePermission();
+          final hasPermission = await NativeBridge.hasStoragePermission().timeout(const Duration(seconds: 3));
           if (hasPermission) {
-            final sdcard = await NativeBridge.getExternalStoragePath();
+            final sdcard = await NativeBridge.getExternalStoragePath().timeout(const Duration(seconds: 3));
             final downloadDir = Directory('$sdcard/Download');
             if (!await downloadDir.exists()) {
               await downloadDir.create(recursive: true);
             }
             final snapshotPath = '$sdcard/Download/openclaw-snapshot-$oldVersion.json';
-            final openclawJson = await NativeBridge.readRootfsFile('root/.openclaw/openclaw.json');
+            final openclawJson = await NativeBridge.readRootfsFile('root/.openclaw/openclaw.json').timeout(const Duration(seconds: 5));
             final snapshot = {
               'version': oldVersion,
               'timestamp': DateTime.now().toIso8601String(),
@@ -134,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen>
 
       bool setupComplete;
       try {
-        setupComplete = await NativeBridge.isBootstrapComplete();
+        setupComplete = await NativeBridge.isBootstrapComplete().timeout(const Duration(seconds: 10));
       } catch (_) {
         setupComplete = false;
       }
@@ -142,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
       // Auto-repair
       if (!setupComplete) {
         try {
-          final status = await NativeBridge.getBootstrapStatus();
+          final status = await NativeBridge.getBootstrapStatus().timeout(const Duration(seconds: 15));
           final rootfsOk = status['rootfsExists'] == true;
           final bashOk = status['binBashExists'] == true;
           final nodeOk = status['nodeInstalled'] == true;
@@ -152,18 +160,18 @@ class _SplashScreenState extends State<SplashScreen>
           if (rootfsOk && bashOk) {
             if (!bypassOk) {
               setState(() => _status = '正在修复 Bionic 补丁...');
-              await NativeBridge.installBionicBypass();
+              await NativeBridge.installBionicBypass().timeout(const Duration(seconds: 60));
             }
             if (!nodeOk) {
               setState(() => _status = '正在重装 Node.js...');
               try {
-                final arch = await NativeBridge.getArch();
+                final arch = await NativeBridge.getArch().timeout(const Duration(seconds: 5));
                 final nodeTarUrl = AppConstants.getNodeTarballUrl(arch);
-                final filesDir = await NativeBridge.getFilesDir();
+                final filesDir = await NativeBridge.getFilesDir().timeout(const Duration(seconds: 5));
                 final nodeTarPath = '$filesDir/tmp/nodejs.tar.xz';
                 final dio = Dio();
                 await dio.download(nodeTarUrl, nodeTarPath);
-                await NativeBridge.extractNodeTarball(nodeTarPath);
+                await NativeBridge.extractNodeTarball(nodeTarPath).timeout(const Duration(seconds: 120));
               } catch (_) {}
             }
             if (!openclawOk && nodeOk) {
@@ -179,7 +187,7 @@ class _SplashScreenState extends State<SplashScreen>
                 await NativeBridge.createBinWrappers('openclaw');
               } catch (_) {}
             }
-            setupComplete = await NativeBridge.isBootstrapComplete();
+            setupComplete = await NativeBridge.isBootstrapComplete().timeout(const Duration(seconds: 10));
           }
         } catch (_) {}
       }
@@ -198,7 +206,10 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _status = '错误：$e');
+        // 即使出错也跳转到 Dashboard 或 Setup 页面，不要卡在空白页
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const SetupWizardScreen()),
+        );
       }
     }
   }

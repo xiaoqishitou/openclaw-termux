@@ -28,6 +28,18 @@ import android.media.projection.MediaProjectionManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.provider.ContactsContract
+import android.provider.CallLog
+import android.provider.Telephony
+import android.telephony.SmsManager
+import android.net.wifi.WifiManager
+import android.net.wifi.WifiInfo
+import java.io.File
+import java.net.NetworkInterface
+import java.util.Collections
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -131,6 +143,9 @@ class MainActivity : FlutterActivity() {
                 }
                 "isGatewayRunning" -> {
                     result.success(GatewayService.isProcessAlive())
+                }
+                "isEmulator" -> {
+                    result.success(isEmulator())
                 }
                 "startTerminalService" -> {
                     try {
@@ -605,6 +620,452 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARGS", "assetPath and destPath required", null)
                     }
                 }
+                // ========== 文件系统工具 ==========
+                "listDirectory" -> {
+                    val path = call.argument<String>("path") ?: "/"
+                    Thread {
+                        try {
+                            val dir = File(path)
+                            val entries = if (dir.exists() && dir.isDirectory) {
+                                dir.listFiles()?.map { file ->
+                                    hashMapOf<String, Any>(
+                                        "name" to file.name,
+                                        "path" to file.absolutePath,
+                                        "isDirectory" to file.isDirectory,
+                                        "size" to file.length(),
+                                        "lastModified" to file.lastModified()
+                                    )
+                                } ?: emptyList()
+                            } else {
+                                emptyList()
+                            }
+                            val data = hashMapOf<String, Any>(
+                                "path" to path,
+                                "entries" to entries,
+                                "count" to entries.size
+                            )
+                            runOnUiThread { result.success(data) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                        }
+                    }.start()
+                }
+                "readFile" -> {
+                    val path = call.argument<String>("path")
+                    val limit = call.argument<Int>("limit")
+                    if (path != null) {
+                        Thread {
+                            try {
+                                val file = File(path)
+                                if (!file.exists() || !file.canRead()) {
+                                    runOnUiThread { result.success(null) }
+                                    return@Thread
+                                }
+                                val content = if (limit != null && limit > 0) {
+                                    file.readText(Charsets.UTF_8).take(limit)
+                                } else {
+                                    file.readText(Charsets.UTF_8)
+                                }
+                                runOnUiThread { result.success(content) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "path required", null)
+                    }
+                }
+                "writeFile" -> {
+                    val path = call.argument<String>("path")
+                    val content = call.argument<String>("content")
+                    if (path != null && content != null) {
+                        Thread {
+                            try {
+                                val file = File(path)
+                                file.parentFile?.mkdirs()
+                                file.writeText(content, Charsets.UTF_8)
+                                runOnUiThread { result.success(true) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "path and content required", null)
+                    }
+                }
+                "deleteFile" -> {
+                    val path = call.argument<String>("path")
+                    if (path != null) {
+                        Thread {
+                            try {
+                                val file = File(path)
+                                val success = file.deleteRecursively()
+                                runOnUiThread { result.success(success) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "path required", null)
+                    }
+                }
+                "createDirectory" -> {
+                    val path = call.argument<String>("path")
+                    if (path != null) {
+                        Thread {
+                            try {
+                                val success = File(path).mkdirs()
+                                runOnUiThread { result.success(success) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "path required", null)
+                    }
+                }
+                "getFileInfo" -> {
+                    val path = call.argument<String>("path")
+                    if (path != null) {
+                        Thread {
+                            try {
+                                val file = File(path)
+                                val data = hashMapOf<String, Any>(
+                                    "exists" to file.exists(),
+                                    "isDirectory" to file.isDirectory,
+                                    "isFile" to file.isFile,
+                                    "size" to file.length(),
+                                    "lastModified" to file.lastModified(),
+                                    "canRead" to file.canRead(),
+                                    "canWrite" to file.canWrite(),
+                                    "absolutePath" to file.absolutePath
+                                )
+                                runOnUiThread { result.success(data) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("FS_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "path required", null)
+                    }
+                }
+                // ========== 应用管理工具 ==========
+                "getInstalledApps" -> {
+                    Thread {
+                        try {
+                            val pm = packageManager
+                            val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+                                .filter { app ->
+                                    // Only return apps that can be launched
+                                    pm.getLaunchIntentForPackage(app.packageName) != null
+                                }
+                                .map { app ->
+                                    hashMapOf<String, Any>(
+                                        "packageName" to app.packageName,
+                                        "name" to pm.getApplicationLabel(app).toString(),
+                                        "isSystem" to ((app.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0)
+                                    )
+                                }
+                                .sortedBy { it["name"] as String }
+                            runOnUiThread { result.success(apps) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("APPS_ERROR", e.message, null) }
+                        }
+                    }.start()
+                }
+                "launchApp" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName != null) {
+                        try {
+                            val intent = packageManager.getLaunchIntentForPackage(packageName)
+                            if (intent != null) {
+                                startActivity(intent)
+                                result.success(true)
+                            } else {
+                                result.error("APPS_ERROR", "App not found or cannot be launched", null)
+                            }
+                        } catch (e: Exception) {
+                            result.error("APPS_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "packageName required", null)
+                    }
+                }
+                "openUrl" -> {
+                    val url = call.argument<String>("url")
+                    if (url != null) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("APPS_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "url required", null)
+                    }
+                }
+                // ========== 剪贴板工具 ==========
+                "getClipboardText" -> {
+                    try {
+                        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = clipboard.primaryClip
+                        if (clip != null && clip.itemCount > 0) {
+                            val text = clip.getItemAt(0).text?.toString()
+                            result.success(text)
+                        } else {
+                            result.success(null)
+                        }
+                    } catch (e: Exception) {
+                        result.error("CLIPBOARD_ERROR", e.message, null)
+                    }
+                }
+                "setClipboardText" -> {
+                    val text = call.argument<String>("text")
+                    if (text != null) {
+                        try {
+                            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("OpenClaw", text))
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("CLIPBOARD_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "text required", null)
+                    }
+                }
+                // ========== 手电筒工具 ==========
+                "toggleFlashlight" -> {
+                    val on = call.argument<Boolean>("on") ?: false
+                    try {
+                        val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                        val cameraId = cameraManager.cameraIdList.find { id ->
+                            val characteristics = cameraManager.getCameraCharacteristics(id)
+                            characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                        }
+                        if (cameraId != null) {
+                            cameraManager.setTorchMode(cameraId, on)
+                            result.success(true)
+                        } else {
+                            result.error("FLASHLIGHT_ERROR", "No flashlight available", null)
+                        }
+                    } catch (e: Exception) {
+                        result.error("FLASHLIGHT_ERROR", e.message, null)
+                    }
+                }
+                "isFlashlightAvailable" -> {
+                    try {
+                        val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                        val available = cameraManager.cameraIdList.any { id ->
+                            val characteristics = cameraManager.getCameraCharacteristics(id)
+                            characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                        }
+                        result.success(available)
+                    } catch (e: Exception) {
+                        result.error("FLASHLIGHT_ERROR", e.message, null)
+                    }
+                }
+                // ========== 设备信息工具 ==========
+                "getDeviceInfo" -> {
+                    try {
+                        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                        val wifiInfo = wifiManager.connectionInfo
+                        val data = hashMapOf<String, Any>(
+                            "brand" to Build.BRAND,
+                            "model" to Build.MODEL,
+                            "device" to Build.DEVICE,
+                            "manufacturer" to Build.MANUFACTURER,
+                            "product" to Build.PRODUCT,
+                            "androidVersion" to Build.VERSION.RELEASE,
+                            "sdkInt" to Build.VERSION.SDK_INT,
+                            "board" to Build.BOARD,
+                            "hardware" to Build.HARDWARE,
+                            "host" to Build.HOST,
+                            "id" to Build.ID,
+                            "type" to Build.TYPE,
+                            "user" to Build.USER,
+                            "display" to Build.DISPLAY,
+                            "fingerprint" to Build.FINGERPRINT,
+                            "tags" to Build.TAGS,
+                            "time" to Build.TIME,
+                            "isEmulator" to (
+                                Build.FINGERPRINT.startsWith("generic") ||
+                                Build.FINGERPRINT.startsWith("unknown") ||
+                                Build.MODEL.contains("google_sdk") ||
+                                Build.MODEL.contains("Emulator") ||
+                                Build.MODEL.contains("Android SDK built for x86") ||
+                                Build.MANUFACTURER.contains("Genymotion") ||
+                                (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
+                                "google_sdk" == Build.PRODUCT
+                            )
+                        )
+                        // Network info
+                        try {
+                            val interfaces = NetworkInterface.getNetworkInterfaces()
+                            val ipList = mutableListOf<String>()
+                            for (intf in Collections.list(interfaces)) {
+                                for (addr in Collections.list(intf.inetAddresses)) {
+                                    if (!addr.isLoopbackAddress) {
+                                        ipList.add(addr.hostAddress ?: "")
+                                    }
+                                }
+                            }
+                            data["ips"] = ipList.filter { it.isNotEmpty() }
+                            data["wifiSsid"] = wifiInfo?.ssid?.replace("\"", "") ?: ""
+                            data["wifiBssid"] = wifiInfo?.bssid ?: ""
+                        } catch (_: Exception) {}
+                        result.success(data)
+                    } catch (e: Exception) {
+                        result.error("DEVICEINFO_ERROR", e.message, null)
+                    }
+                }
+                // ========== 联系人工具 ==========
+                "getContacts" -> {
+                    Thread {
+                        try {
+                            val contactsList = mutableListOf<Map<String, Any>>()
+                            val cursor = contentResolver.query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                arrayOf(
+                                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                                ),
+                                null, null,
+                                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+                            )
+                            cursor?.use {
+                                val nameIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                                val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                while (it.moveToNext()) {
+                                    val name = if (nameIndex >= 0) it.getString(nameIndex) else ""
+                                    val number = if (numberIndex >= 0) it.getString(numberIndex) else ""
+                                    if (name != null && number != null) {
+                                        contactsList.add(hashMapOf(
+                                            "name" to name,
+                                            "phoneNumber" to number
+                                        ))
+                                    }
+                                }
+                            }
+                            runOnUiThread { result.success(contactsList) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("CONTACTS_ERROR", e.message, null) }
+                        }
+                    }.start()
+                }
+                "getCallLogs" -> {
+                    val limit = call.argument<Int>("limit") ?: 100
+                    Thread {
+                        try {
+                            val logsList = mutableListOf<Map<String, Any>>()
+                            val cursor = contentResolver.query(
+                                CallLog.Calls.CONTENT_URI,
+                                arrayOf(
+                                    CallLog.Calls.NUMBER,
+                                    CallLog.Calls.TYPE,
+                                    CallLog.Calls.DATE,
+                                    CallLog.Calls.DURATION
+                                ),
+                                null, null,
+                                CallLog.Calls.DATE + " DESC LIMIT $limit"
+                            )
+                            cursor?.use {
+                                val numberIndex = it.getColumnIndex(CallLog.Calls.NUMBER)
+                                val typeIndex = it.getColumnIndex(CallLog.Calls.TYPE)
+                                val dateIndex = it.getColumnIndex(CallLog.Calls.DATE)
+                                val durationIndex = it.getColumnIndex(CallLog.Calls.DURATION)
+                                while (it.moveToNext()) {
+                                    val number = if (numberIndex >= 0) it.getString(numberIndex) else ""
+                                    val type = if (typeIndex >= 0) it.getInt(typeIndex) else 0
+                                    val date = if (dateIndex >= 0) it.getLong(dateIndex) else 0L
+                                    val duration = if (durationIndex >= 0) it.getLong(durationIndex) else 0L
+                                    val typeName = when (type) {
+                                        CallLog.Calls.INCOMING_TYPE -> "incoming"
+                                        CallLog.Calls.OUTGOING_TYPE -> "outgoing"
+                                        CallLog.Calls.MISSED_TYPE -> "missed"
+                                        CallLog.Calls.REJECTED_TYPE -> "rejected"
+                                        else -> "unknown"
+                                    }
+                                    logsList.add(hashMapOf(
+                                        "number" to (number ?: ""),
+                                        "type" to typeName,
+                                        "date" to date,
+                                        "duration" to duration
+                                    ))
+                                }
+                            }
+                            runOnUiThread { result.success(logsList) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("CALLLOGS_ERROR", e.message, null) }
+                        }
+                    }.start()
+                }
+                "getSmsMessages" -> {
+                    val limit = call.argument<Int>("limit") ?: 100
+                    Thread {
+                        try {
+                            val smsList = mutableListOf<Map<String, Any>>()
+                            val cursor = contentResolver.query(
+                                Telephony.Sms.CONTENT_URI,
+                                arrayOf(
+                                    Telephony.Sms.ADDRESS,
+                                    Telephony.Sms.BODY,
+                                    Telephony.Sms.DATE,
+                                    Telephony.Sms.TYPE
+                                ),
+                                null, null,
+                                Telephony.Sms.DATE + " DESC LIMIT $limit"
+                            )
+                            cursor?.use {
+                                val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
+                                val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
+                                val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
+                                val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
+                                while (it.moveToNext()) {
+                                    val address = if (addressIndex >= 0) it.getString(addressIndex) else ""
+                                    val body = if (bodyIndex >= 0) it.getString(bodyIndex) else ""
+                                    val date = if (dateIndex >= 0) it.getLong(dateIndex) else 0L
+                                    val type = if (typeIndex >= 0) it.getInt(typeIndex) else 0
+                                    val typeName = when (type) {
+                                        Telephony.Sms.MESSAGE_TYPE_INBOX -> "received"
+                                        Telephony.Sms.MESSAGE_TYPE_SENT -> "sent"
+                                        Telephony.Sms.MESSAGE_TYPE_DRAFT -> "draft"
+                                        else -> "unknown"
+                                    }
+                                    smsList.add(hashMapOf(
+                                        "address" to (address ?: ""),
+                                        "body" to (body ?: ""),
+                                        "date" to date,
+                                        "type" to typeName
+                                    ))
+                                }
+                            }
+                            runOnUiThread { result.success(smsList) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("SMS_ERROR", e.message, null) }
+                        }
+                    }.start()
+                }
+                "sendSms" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    val message = call.argument<String>("message")
+                    if (phoneNumber != null && message != null) {
+                        try {
+                            val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                applicationContext.getSystemService(SmsManager::class.java)
+                            } else {
+                                @Suppress("DEPRECATION")
+                                SmsManager.getDefault()
+                            }
+                            smsManager?.sendTextMessage(phoneNumber, null, message, null, null)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("SMS_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "phoneNumber and message required", null)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -728,5 +1189,20 @@ class MainActivity : FlutterActivity() {
         const val NOTIFICATION_PERMISSION_REQUEST = 1001
         const val SCREEN_CAPTURE_REQUEST = 1002
         const val STORAGE_PERMISSION_REQUEST = 1003
+    }
+
+    /// 检测是否在模拟器上运行
+    private fun isEmulator(): Boolean {
+        return (Build.FINGERPRINT.startsWith("generic") ||
+                Build.FINGERPRINT.startsWith("unknown") ||
+                Build.MODEL.contains("google_sdk") ||
+                Build.MODEL.contains("Emulator") ||
+                Build.MODEL.contains("Android SDK built for x86") ||
+                Build.MANUFACTURER.contains("Genymotion") ||
+                (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
+                "google_sdk" == Build.PRODUCT ||
+                Build.HARDWARE.contains("goldfish") ||
+                Build.HARDWARE.contains("ranchu") ||
+                Build.HARDWARE.contains("emulator"))
     }
 }

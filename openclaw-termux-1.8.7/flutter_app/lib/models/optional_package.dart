@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 可选开发工具元数据 — 安装在 proot Ubuntu 环境中
 class OptionalPackage {
   final String id;
   final String name;
@@ -24,15 +23,6 @@ class OptionalPackage {
     checkPath: 'usr/bin/go', estimatedSize: '~150 MB', completionSentinel: 'GO_INSTALL_COMPLETE',
   );
 
-  static const brewPackage = OptionalPackage(
-    id: 'brew', name: 'Homebrew',
-    description: 'Linux 上强大的包管理器',
-    icon: Icons.science, color: Colors.amber,
-    installCommand: "set -e; echo '>>> 正在安装 Homebrew（可能需要一些时间）...'; touch /.dockerenv; apt-get update -qq && apt-get install -y -qq build-essential procps curl file git; NONINTERACTIVE=1 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"; grep -q 'linuxbrew' /root/.bashrc 2>/dev/null || { echo 'eval \"\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"' >> /root/.bashrc; }; eval \"\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"; brew --version; echo '>>> BREW_INSTALL_COMPLETE'",
-    uninstallCommand: "set -e; echo '>>> 正在移除 Homebrew...'; touch /.dockerenv; NONINTERACTIVE=1 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)\" || true; rm -rf /home/linuxbrew/.linuxbrew; sed -i '/linuxbrew/d' /root/.bashrc; echo '>>> BREW_UNINSTALL_COMPLETE'",
-    checkPath: 'home/linuxbrew/.linuxbrew/bin/brew', estimatedSize: '~500 MB', completionSentinel: 'BREW_INSTALL_COMPLETE',
-  );
-
   static const sshPackage = OptionalPackage(
     id: 'ssh', name: 'OpenSSH',
     description: 'SSH 客户端与服务端，用于安全远程访问',
@@ -42,9 +32,64 @@ class OptionalPackage {
     checkPath: 'usr/bin/ssh', estimatedSize: '~10 MB', completionSentinel: 'SSH_INSTALL_COMPLETE',
   );
 
-  /// 所有可选软件包
-  static const all = [goPackage, brewPackage, sshPackage];
+  static const adbPackage = OptionalPackage(
+    id: 'adb', name: 'ADB',
+    description: 'Android 调试桥，连接管理设备',
+    icon: Icons.phone_android, color: Colors.green,
+    installCommand: "set -e; echo '>>> 正在安装 ADB...'; apt-get update -qq && apt-get install -y android-tools-adb; adb version; echo '>>> ADB_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 ADB...'; apt-get remove -y android-tools-adb && apt-get autoremove -y; echo '>>> ADB_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/bin/adb', estimatedSize: '~30 MB', completionSentinel: 'ADB_INSTALL_COMPLETE',
+  );
 
-  /// 卸载完成标识（从安装标识派生）
+  static const cpolarPackage = OptionalPackage(
+    id: 'cpolar', name: 'Cpolar',
+    description: '内网穿透，将本地服务暴露到公网',
+    icon: Icons.cloud, color: Colors.blue,
+    installCommand: "set -e; echo '>>> 正在安装 Cpolar...'; apt-get update -qq && apt-get install -y curl; curl -L -o /tmp/cpolar.tar.gz https://static.cpolar.com/downloads/releases/3.3.12/cpolar-stable-linux-arm.tar.gz || curl -L -o /tmp/cpolar.tar.gz https://static.cpolar.com/downloads/releases/3.3.12/cpolar-stable-linux-amd64.tar.gz; tar -xzf /tmp/cpolar.tar.gz -C /usr/local/bin/ 2>/dev/null || tar -xzf /tmp/cpolar.tar.gz -C /tmp/ && mv /tmp/cpolar /usr/local/bin/; chmod +x /usr/local/bin/cpolar; cpolar version; echo '>>> CPOLAR_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 Cpolar...'; rm -f /usr/local/bin/cpolar; rm -f /tmp/cpolar.tar.gz; echo '>>> CPOLAR_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/local/bin/cpolar', estimatedSize: '~15 MB', completionSentinel: 'CPOLAR_INSTALL_COMPLETE',
+  );
+
+  static const buildEssentialPackage = OptionalPackage(
+    id: 'build-essential', name: 'Build Essential',
+    description: 'C/C++ 编译工具链（gcc, g++, make）',
+    icon: Icons.build, color: Colors.orange,
+    installCommand: "set -e; echo '>>> 正在安装 build-essential...'; apt-get update -qq && apt-get install -y build-essential; gcc --version | head -1; echo '>>> BUILDESSENTIAL_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 build-essential...'; apt-get remove -y build-essential gcc g++ make && apt-get autoremove -y; echo '>>> BUILDESSENTIAL_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/bin/gcc', estimatedSize: '~80 MB', completionSentinel: 'BUILDESSENTIAL_INSTALL_COMPLETE',
+  );
+
+  static const gitPackage = OptionalPackage(
+    id: 'git', name: 'Git',
+    description: '分布式版本控制系统',
+    icon: Icons.source, color: Color(0xFFF05032),
+    installCommand: "set -e; echo '>>> 正在安装 Git...'; apt-get update -qq && apt-get install -y git; git --version; echo '>>> GIT_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 Git...'; apt-get remove -y git && apt-get autoremove -y; echo '>>> GIT_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/bin/git', estimatedSize: '~40 MB', completionSentinel: 'GIT_INSTALL_COMPLETE',
+  );
+
+  static const zshPackage = OptionalPackage(
+    id: 'zsh', name: 'Zsh + Oh My Zsh',
+    description: '强大的 Shell 及其配置框架',
+    icon: Icons.terminal, color: Color(0xFF5A7E9E),
+    installCommand: "set -e; echo '>>> 正在安装 Zsh...'; apt-get update -qq && apt-get install -y zsh curl git; sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" --unattended; chsh -s /bin/zsh 2>/dev/null || true; zsh --version; echo '>>> ZSH_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 Zsh...'; rm -rf /root/.oh-my-zsh; apt-get remove -y zsh && apt-get autoremove -y; echo '>>> ZSH_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/bin/zsh', estimatedSize: '~50 MB', completionSentinel: 'ZSH_INSTALL_COMPLETE',
+  );
+
+  static const tmuxPackage = OptionalPackage(
+    id: 'tmux', name: 'Tmux',
+    description: '终端复用器，支持多窗口和会话管理',
+    icon: Icons.view_agenda, color: Color(0xFF66BB6A),
+    installCommand: "set -e; echo '>>> 正在安装 Tmux...'; apt-get update -qq && apt-get install -y tmux; tmux -V; echo '>>> TMUX_INSTALL_COMPLETE'",
+    uninstallCommand: "set -e; echo '>>> 正在移除 Tmux...'; apt-get remove -y tmux && apt-get autoremove -y; echo '>>> TMUX_UNINSTALL_COMPLETE'",
+    checkPath: 'usr/bin/tmux', estimatedSize: '~5 MB', completionSentinel: 'TMUX_INSTALL_COMPLETE',
+  );
+
+  static const all = [
+    goPackage, sshPackage, adbPackage, cpolarPackage,
+    buildEssentialPackage, gitPackage, zshPackage, tmuxPackage,
+  ];
+
   String get uninstallSentinel => completionSentinel.replaceFirst('INSTALL', 'UNINSTALL');
 }

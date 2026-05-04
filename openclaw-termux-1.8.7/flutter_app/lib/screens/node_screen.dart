@@ -164,6 +164,15 @@ class _NodeScreenState extends State<NodeScreen> {
                     _capabilityTile(theme, '串口', '蓝牙与 USB 串口通信', Icons.usb, available: true, iconColor: AppColors.iconNode),
                     const SizedBox(height: 16),
 
+                    // 系统工具
+                    _sectionHeader(theme, '系统工具'),
+                    _capabilityTile(theme, '文件系统', '读取、写入、管理手机文件', Icons.folder_open, available: true, iconColor: AppColors.iconNode),
+                    _capabilityTile(theme, '应用管理', '打开应用、获取已安装应用列表', Icons.apps, available: true, iconColor: AppColors.iconNode),
+                    _capabilityTile(theme, '剪贴板', '读取和写入剪贴板内容', Icons.content_paste, available: true, iconColor: AppColors.iconNode),
+                    _capabilityTile(theme, '设备信息', '获取详细的设备和网络信息', Icons.devices, available: true, iconColor: AppColors.iconNode),
+                    _capabilityTile(theme, '联系人', '读取联系人、通话记录和短信', Icons.contacts, available: true, iconColor: AppColors.iconNode),
+                    const SizedBox(height: 16),
+
                     // 设备信息
                     if (state.deviceId != null) ...[
                       _sectionHeader(theme, '设备信息'),

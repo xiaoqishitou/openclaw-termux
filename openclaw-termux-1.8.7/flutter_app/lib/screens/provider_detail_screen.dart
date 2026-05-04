@@ -61,7 +61,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
   Future<void> _save() async {
     final apiKey = _apiKeyController.text.trim();
-    if (apiKey.isEmpty) {
+    // 本地模型允许空密钥
+    final localProviders = ['ollama', 'mnn', 'localai'];
+    if (apiKey.isEmpty && !localProviders.contains(widget.provider.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('API 密钥不能为空')),
       );

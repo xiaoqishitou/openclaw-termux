@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../app.dart';
 import '../constants.dart';
@@ -51,7 +50,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
               _refreshPkgStatuses();
             }
 
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,9 +112,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Expanded(
-                    child: _buildSteps(state, theme, isDark),
-                  ),
+                  _buildSteps(state, theme, isDark),
                   if (state.hasError) ...[
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -130,11 +127,14 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                           const Icon(Icons.error_outline_rounded, color: AppColors.statusRed, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: SingleChildScrollView(
-                              child: Text(
-                                state.error ?? '未知错误',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.statusRed,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 200),
+                              child: SingleChildScrollView(
+                                child: Text(
+                                  state.error ?? '未知错误',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppColors.statusRed,
+                                  ),
                                 ),
                               ),
                             ),
@@ -187,6 +187,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             );
@@ -205,7 +206,8 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
       (5, '配置 Bionic 补丁', SetupStep.configuringBypass),
     ];
 
-    return ListView(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (final (num, label, step) in steps)
           ProgressStep(
@@ -247,12 +249,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
   Widget _buildPackageTile(ThemeData theme, OptionalPackage package, bool isDark) {
     final installed = _pkgStatuses[package.id] ?? false;
-    final pkgColors = {
-      'go': AppColors.statusBlue,
-      'brew': AppColors.statusAmber,
-      'ssh': AppColors.iconSsh,
-    };
-    final color = pkgColors[package.id] ?? AppColors.mutedText;
+    final color = package.color;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
