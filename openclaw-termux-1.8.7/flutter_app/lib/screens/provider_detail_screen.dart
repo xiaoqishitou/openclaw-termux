@@ -215,7 +215,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
           _sectionTitle(theme, '选择模型'),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _selectedModel,
+            initialValue: _selectedModel,
             isExpanded: true,
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.smart_toy_outlined, size: 20, color: isDark ? AppColors.mutedText : Colors.grey),
@@ -268,7 +268,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               height: 44,
               child: OutlinedButton(
                 onPressed: _removing ? null : _remove,
-                style: OutlinedButtonStyleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.redAccent.withAlpha(150)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 child: _removing
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('移除配置', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),

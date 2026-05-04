@@ -589,6 +589,22 @@ class MainActivity : FlutterActivity() {
                         }
                     }.start()
                 }
+                "copyBundledAsset" -> {
+                    val assetPath = call.argument<String>("assetPath")
+                    val destPath = call.argument<String>("destPath")
+                    if (assetPath != null && destPath != null) {
+                        Thread {
+                            try {
+                                val copied = bootstrapManager.copyBundledAsset(assetPath, destPath)
+                                runOnUiThread { result.success(copied) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("ASSET_ERROR", e.message, null) }
+                            }
+                        }.start()
+                    } else {
+                        result.error("INVALID_ARGS", "assetPath and destPath required", null)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }

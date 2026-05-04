@@ -29,8 +29,8 @@ class GatewayControls extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
-                : LinearGradient(
-                    colors: [const Color(0xFFE8EAF6), const Color(0xFFE3F2FD)],
+                : const LinearGradient(
+                    colors: [Color(0xFFE8EAF6), Color(0xFFE3F2FD)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -132,8 +132,7 @@ class GatewayControls extends StatelessWidget {
                             final url = state.dashboardUrl ?? AppConstants.gatewayUrl;
                             Clipboard.setData(ClipboardData(text: url));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('URL 已复制到剪贴板')),
-                              duration: Duration(seconds: 2),
+                              const SnackBar(content: Text('URL 已复制到剪贴板'), duration: Duration(seconds: 2)),
                             );
                           },
                         ),

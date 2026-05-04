@@ -83,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('设置', centerTitle: true)),
+      appBar: AppBar(title: const Text('设置')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -213,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ]),
 
-                _sectionHeader(context, '关于', Icons.openclaw_rounded),
+                _sectionHeader(context, '关于', Icons.info_outline_rounded),
                 _buildSettingsCard([
                   ListTile(
                     leading: Container(
@@ -225,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: const Icon(Icons.hub, color: AppColors.accent, size: 20),
                     ),
                     title: const Text('OpenClaw'),
-                    subtitle: Text(
+                    subtitle: const Text(
                       'AI 网关 for Android\n版本 ${AppConstants.version}',
                     ),
                     isThreeLine: true,

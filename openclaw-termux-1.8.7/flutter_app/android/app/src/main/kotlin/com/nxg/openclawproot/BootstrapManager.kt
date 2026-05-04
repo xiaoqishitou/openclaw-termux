@@ -22,6 +22,9 @@ class BootstrapManager(
     private val filesDir: String,
     private val nativeLibDir: String
 ) {
+    companion object {
+        private const val TAG = "BootstrapManager"
+    }
     private val rootfsDir get() = "$filesDir/rootfs/ubuntu"
     private val tmpDir get() = "$filesDir/tmp"
     private val homeDir get() = "$filesDir/home"
@@ -169,6 +172,7 @@ class BootstrapManager(
                                         }
                                         fileCount++
                                     }
+
                                 }
 
                                 entry = tis.nextEntry
@@ -1275,7 +1279,8 @@ require('/root/.openclaw/proot-compat.js');
                         modified = true
                     }
                 }
-                // Fix model entries: strings → objects with id field (#83, #88)
+                // Fix model entries: strings → objects, missing name → add name
+                // OpenClaw validation requires both id AND name (#83, #88, config error)
                 if (json.has("models")) {
                     val models = json.optJSONObject("models")
                     val providers = models?.optJSONObject("providers")
@@ -1288,9 +1293,20 @@ require('/root/.openclaw/proot-compat.js');
                             if (arr != null) {
                                 for (i in 0 until arr.length()) {
                                     val item = arr.get(i)
-                                    if (item is String) {
-                                        arr.put(i, org.json.JSONObject().put("id", item))
-                                        modified = true
+                                    when {
+                                        item is String -> {
+                                            arr.put(i, org.json.JSONObject()
+                                                .put("id", item)
+                                                .put("name", item))
+                                            modified = true
+                                        }
+                                        item is org.json.JSONObject -> {
+                                            val obj = item as org.json.JSONObject
+                                            if (obj.has("id") && !obj.has("name")) {
+                                                obj.put("name", obj.getString("id"))
+                                                modified = true
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1465,6 +1481,41 @@ require('/root/.openclaw/proot-compat.js');
             val output = pm.runInProotSync("command -v openclaw")
             output.trim().isNotEmpty()
         } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Copy a bundled asset from Flutter assets/ directory to filesystem.
+     * Used for pre-packaged rootfs and Node.js tarballs for offline installation.
+     * Returns true if asset was found and copied, false if not bundled.
+     */
+    fun copyBundledAsset(assetPath: String, destPath: String): Boolean {
+        return try {
+            val destFile = File(destPath)
+            if (destFile.exists() && destFile.length() > 0) {
+                // Already exists (e.g., from previous download), skip copy
+                true
+            } else {
+                context.assets.open(assetPath).use { input ->
+                    destFile.parentFile?.mkdirs()
+                    FileOutputStream(destFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                true
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** Check if a specific bundled asset exists in the APK. */
+    fun hasBundledAsset(assetPath: String): Boolean {
+        return try {
+            context.assets.open(assetPath).close()
+            true
+        } catch (_: Exception) {
             false
         }
     }

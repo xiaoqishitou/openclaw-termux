@@ -26,8 +26,8 @@ class NodeControls extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
-                : LinearGradient(
-                    colors: [const Color(0xFFF3E5F5), const Color(0xFFE8EAF6)],
+                : const LinearGradient(
+                    colors: [Color(0xFFF3E5F5), Color(0xFFE8EAF6)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

@@ -78,7 +78,7 @@ class _TerminalToolbarState extends State<TerminalToolbar> {
 
     return Container(
       color: bgColor,
-      child: SafeArea(top: false, child: SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5), children: [
+      child: SafeArea(top: false, child: SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5), child: Row(children: [
         // 第一组：修饰键
         keyBtn('ESC', sendData: '\x1b'),
         Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 4), color: isDark ? Colors.white24 : Colors.black12),
@@ -108,7 +108,7 @@ class _TerminalToolbarState extends State<TerminalToolbar> {
         keyBtn('|', sendData: '|'),
         keyBtn('~', sendData: '~'),
         keyBtn('_', sendData: '_'),
-      ])),
+      ]))),
     );
   }
 }

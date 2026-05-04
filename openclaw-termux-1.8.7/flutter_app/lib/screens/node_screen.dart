@@ -103,10 +103,10 @@ class _NodeScreenState extends State<NodeScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                               child: TextField(
                                 controller: _tokenController, obscureText: true,
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   labelText: '网关令牌', hintText: '从仪表盘 URL 中粘贴',
                                   helperText: '位于仪表盘 URL 的 #token= 之后',
-                                  prefixIcon: const Icon(Icons.key_outlined, size: 20),
+                                  prefixIcon: Icon(Icons.key_outlined, size: 20),
                                 ),
                               ),
                             ),

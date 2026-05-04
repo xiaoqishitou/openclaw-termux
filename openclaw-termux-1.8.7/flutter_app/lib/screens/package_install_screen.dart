@@ -89,13 +89,13 @@ class _PackageInstallScreenState extends State<PackageInstallScreen> {
   Widget build(BuildContext context) {
     final action = widget.isUninstall ? '卸载' : '安装';
     return Scaffold(
-      appBar: AppBar(title: Text('$action ${widget.package.name}', centerTitle: true), automaticallyImplyLeading: false, actions: [
+      appBar: AppBar(title: Text('$action ${widget.package.name}'), automaticallyImplyLeading: false, actions: [
         IconButton(icon: const Icon(Icons.camera_alt_outlined), tooltip: '截图', onPressed: _takeScreenshot),
         IconButton(icon: const Icon(Icons.paste), tooltip: '粘贴', onPressed: _paste),
       ]),
       body: Column(children: [
         if (_loading)
-          Expanded(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text('正在启动...', style: TextStyle(color: Colors.grey.shade400))]))))
+          Expanded(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text('正在启动...', style: TextStyle(color: Colors.grey.shade400))])))
         else if (_error != null)
           Expanded(child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error), const SizedBox(height: 16),
