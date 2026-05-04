@@ -58,13 +58,12 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 
 <table align="center">
   <tr>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/74bee1e3d2fcb043303b2b57c902dd25_750.png" alt="Screenshot" width="220"/></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/7e0eeb8b03be1283ea0ba3be55ee2381_750.png" alt="Screenshot" width="220"/></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/f9a397a4ba9eda08d0b509b83390ac37_750.png" alt="Screenshot" width="220"/></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-18-57-48-37_134d36a7bfd4ec9.jpg" alt="机器人平台" width="220"/><br/><b>机器人平台</b></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-18-58-06-41_134d36a7bfd4ec9.jpg" alt="AI 提供商" width="220"/><br/><b>AI 提供商</b></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-18-58-13-85_134d36a7bfd4ec9.jpg" alt="AI 提供商" width="220"/><br/><b>AI 提供商</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-12-33-35-85_28fb852a46ed910.jpg" alt="Screenshot" width="220"/></td>
-    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-12-43-27-06_28fb852a46ed910.jpg" alt="Screenshot" width="220"/></td>
+    <td align="center"><img src="openclaw-termux-1.8.7/assets/Screenshot_2026-05-04-18-58-30-34_134d36a7bfd4ec9.jpg" alt="可选软件包" width="220"/><br/><b>可选软件包</b></td>
   </tr>
 </table>
 
