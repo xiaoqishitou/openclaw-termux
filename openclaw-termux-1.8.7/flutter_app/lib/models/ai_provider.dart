@@ -124,6 +124,15 @@ class AiProvider {
     apiKeyHint: 'sk-...',
   );
 
+  static const mimo = AiProvider(
+    id: 'mimo', name: 'Mimo',
+    description: 'Mimo AI 模型平台，兼容 OpenAI 和 Anthropic 接口',
+    icon: Icons.chat_bubble, color: Color(0xFF8B5CF6),
+    baseUrl: 'https://token-plan-cn.xiaomimo.com/v1',
+    defaultModels: ['mimo-pro','mimo-standard','mimo-lite','gpt-4o','claude-sonnet-4'],
+    apiKeyHint: 'mimo-...',
+  );
+
   // ========== 海外推理平台 ==========
 
   static const groq = AiProvider(
@@ -186,7 +195,7 @@ class AiProvider {
     // 国际主流
     anthropic, openai, google, openrouter, nvidia, deepseek, xai,
     // 国内供应商
-    qwen, doubao, zhipu, moonshot, siliconflow,
+    qwen, doubao, zhipu, moonshot, siliconflow, mimo,
     // 海外推理平台
     groq, together, fireworks,
     // 本地模型

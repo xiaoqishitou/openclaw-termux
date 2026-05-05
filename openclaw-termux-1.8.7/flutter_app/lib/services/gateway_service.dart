@@ -20,6 +20,9 @@ class GatewayService {
   bool _isDisposed = false;
   int _consecutiveFailures = 0;
   static const int _maxFastChecks = 15;
+  int _autoRestartAttempts = 0;
+  static const int _maxAutoRestarts = 2;
+  DateTime? _lastAutoRestart;
 
   static final _tokenUrlRegex = RegExp(r'https?://(?:localhost|127\.0\.0\.1):18789/#token=[0-9a-f]+');
   static final _boxDrawing = RegExp(r'[│┤├┬┴┼╮╯╰╭─╌╴╶┌┐└┘◇◆]+');
@@ -309,6 +312,7 @@ fs.writeFileSync(p, JSON.stringify(c, null, 2));
     if (_startInProgress) return;
     _startInProgress = true;
     _consecutiveFailures = 0;
+    _autoRestartAttempts = 0;
 
     final prefs = PreferencesService();
     await prefs.init();
@@ -492,8 +496,30 @@ fs.writeFileSync(p, JSON.stringify(c, null, 2));
           logs: [..._state.logs, _ts('[WARN] Gateway process not running')],
         ));
         _cancelAllTimers();
+
+        // 自动重启：如果网关意外停止且未超过最大重试次数
+        _tryAutoRestart();
       }
     }
+  }
+
+  void _tryAutoRestart() {
+    if (_autoRestartAttempts >= _maxAutoRestarts) return;
+    final now = DateTime.now();
+    if (_lastAutoRestart != null && now.difference(_lastAutoRestart!).inMinutes < 5) return;
+
+    _autoRestartAttempts++;
+    _lastAutoRestart = now;
+
+    _updateState(_state.copyWith(
+      logs: [..._state.logs, _ts('[INFO] 自动重启网关（第 $_autoRestartAttempts 次）...')],
+    ));
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_state.status == GatewayStatus.stopped && !_isDisposed) {
+        start();
+      }
+    });
   }
 
   Future<bool> checkHealth() async {

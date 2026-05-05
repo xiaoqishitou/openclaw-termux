@@ -300,4 +300,35 @@ class NativeBridge {
   static Future<bool> sendSms(String phoneNumber, String message) async {
     return await _channel.invokeMethod('sendSms', {'phoneNumber': phoneNumber, 'message': message});
   }
+
+  // ========== 无障碍服务工具（模拟点击/滑动）==========
+
+  static Future<bool> isAccessibilityEnabled() async {
+    return await _channel.invokeMethod('isAccessibilityEnabled');
+  }
+
+  static Future<void> openAccessibilitySettings() async {
+    await _channel.invokeMethod('openAccessibilitySettings');
+  }
+
+  static Future<bool> tapScreen(double x, double y) async {
+    return await _channel.invokeMethod('tapScreen', {'x': x, 'y': y});
+  }
+
+  static Future<bool> swipeScreen(double x1, double y1, double x2, double y2, {int duration = 300}) async {
+    return await _channel.invokeMethod('swipeScreen', {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'duration': duration});
+  }
+
+  static Future<bool> tapBack() async {
+    return await _channel.invokeMethod('tapBack');
+  }
+
+  static Future<bool> tapHome() async {
+    return await _channel.invokeMethod('tapHome');
+  }
+
+  static Future<Map<String, int>> getScreenSize() async {
+    final result = await _channel.invokeMethod('getScreenSize');
+    return Map<String, int>.from(result as Map);
+  }
 }

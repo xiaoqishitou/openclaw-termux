@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../app.dart';
 import '../providers/node_provider.dart';
 import '../services/preferences_service.dart';
+import '../services/native_bridge.dart';
 import '../widgets/node_controls.dart';
 
 /// 节点配置 — 连接网关、设备能力、配对状态
@@ -162,6 +163,7 @@ class _NodeScreenState extends State<NodeScreen> {
                     _capabilityTile(theme, '震动', '触觉反馈与震动模式', Icons.vibration, available: true, iconColor: AppColors.iconNode),
                     _capabilityTile(theme, '传感器', '加速度计、陀螺仪、气压计等', Icons.sensors, available: true, iconColor: AppColors.iconNode),
                     _capabilityTile(theme, '串口', '蓝牙与 USB 串口通信', Icons.usb, available: true, iconColor: AppColors.iconNode),
+                    _capabilityTile(theme, '无障碍', '模拟点击/滑动屏幕', Icons.touch_app, available: true, iconColor: AppColors.iconNode, onTap: () => _showAccessibilityDialog(context)),
                     const SizedBox(height: 16),
 
                     // 系统工具
@@ -222,13 +224,14 @@ class _NodeScreenState extends State<NodeScreen> {
     );
   }
 
-  Widget _capabilityTile(ThemeData theme, String title, String subtitle, IconData icon, {bool available = true, required Color iconColor}) {
+  Widget _capabilityTile(ThemeData theme, String title, String subtitle, IconData icon, {bool available = true, required Color iconColor, VoidCallback? onTap}) {
     final isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
@@ -248,6 +251,102 @@ class _NodeScreenState extends State<NodeScreen> {
                 ? Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: AppColors.statusGreen.withAlpha(15), shape: BoxShape.circle), child: const Icon(Icons.check_circle, color: AppColors.statusGreen, size: 18))
                 : Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: AppColors.statusAmber.withAlpha(15), shape: BoxShape.circle), child: const Icon(Icons.block, color: AppColors.statusAmber, size: 18)),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showAccessibilityDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(children: [
+          Icon(Icons.touch_app, color: AppColors.iconNode),
+          const SizedBox(width: 10),
+          const Text('无障碍控制'),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('模拟点击和滑动屏幕操作', style: Theme.of(ctx).textTheme.bodySmall),
+            const SizedBox(height: 16),
+            FutureBuilder<bool>(
+              future: NativeBridge.isAccessibilityEnabled(),
+              builder: (context, snapshot) {
+                if (snapshot.data != true) {
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusAmber.withAlpha(15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: AppColors.statusAmber, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('无障碍服务未启用', style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: AppColors.statusAmber))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () { Navigator.pop(ctx); NativeBridge.openAccessibilitySettings(); },
+                          icon: const Icon(Icons.settings),
+                          label: const Text('前往设置启用'),
+                          style: FilledButton.styleFrom(foregroundColor: AppColors.accent),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildA11yAction(ctx, '点击屏幕中心', Icons.touch_app, () async {
+                      final size = await NativeBridge.getScreenSize();
+                      await NativeBridge.tapScreen(size['width']! / 2.0, size['height']! / 2.0);
+                    }),
+                    _buildA11yAction(ctx, '返回键', Icons.arrow_back, () => NativeBridge.tapBack()),
+                    _buildA11yAction(ctx, 'Home 键', Icons.home, () => NativeBridge.tapHome()),
+                    _buildA11yAction(ctx, '向上滑动', Icons.keyboard_arrow_up, () async {
+                      final size = await NativeBridge.getScreenSize();
+                      await NativeBridge.swipeScreen(
+                        size['width']! / 2.0, size['height']! * 0.7,
+                        size['width']! / 2.0, size['height']! * 0.3,
+                        duration: 300,
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭')),
+        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  Widget _buildA11yAction(BuildContext ctx, String label, IconData icon, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.iconNode,
+          side: BorderSide(color: AppColors.iconNode.withAlpha(80)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );

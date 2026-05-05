@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">OpenClaw 无障碍服务 - 用于模拟点击和滑动屏幕操作，帮助 AI 网关控制设备</string>
+</resources>

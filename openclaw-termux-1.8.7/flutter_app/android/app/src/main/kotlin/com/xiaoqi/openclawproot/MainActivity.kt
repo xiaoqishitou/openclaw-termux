@@ -1066,6 +1066,38 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARGS", "phoneNumber and message required", null)
                     }
                 }
+                // ========== 无障碍服务工具 ==========
+                "isAccessibilityEnabled" -> {
+                    result.success(OpenClawAccessibilityService.isRunning())
+                }
+                "openAccessibilitySettings" -> {
+                    val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                    result.success(true)
+                }
+                "tapScreen" -> {
+                    val x = call.argument<Double>("x")?.toFloat() ?: 0f
+                    val y = call.argument<Double>("y")?.toFloat() ?: 0f
+                    result.success(OpenClawAccessibilityService.click(x, y))
+                }
+                "swipeScreen" -> {
+                    val x1 = call.argument<Double>("x1")?.toFloat() ?: 0f
+                    val y1 = call.argument<Double>("y1")?.toFloat() ?: 0f
+                    val x2 = call.argument<Double>("x2")?.toFloat() ?: 0f
+                    val y2 = call.argument<Double>("y2")?.toFloat() ?: 0f
+                    val duration = call.argument<Int>("duration")?.toLong() ?: 300L
+                    result.success(OpenClawAccessibilityService.swipe(x1, y1, x2, y2, duration))
+                }
+                "tapBack" -> {
+                    result.success(OpenClawAccessibilityService.tapBack())
+                }
+                "tapHome" -> {
+                    result.success(OpenClawAccessibilityService.tapHome())
+                }
+                "getScreenSize" -> {
+                    val (width, height) = OpenClawAccessibilityService.getScreenSize()
+                    result.success(mapOf("width" to width, "height" to height))
+                }
                 else -> {
                     result.notImplemented()
                 }
