@@ -38,8 +38,10 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 **当前版本：v1.8.8**
 
 本次更新（v1.8.8）重点包括：
+- 新增 Android 无障碍服务支持（AccessibilityService）
 - 新增 Bot 平台支持（Bot Platform）
 - 新增多种节点能力：应用管理、剪贴板、联系人、设备信息、文件系统、手电筒
+- 优化 AI 模型配置与节点/Web 仪表盘界面
 - 全局 UI 美化与中文本地化
 - 配置自动修复（解决 `gateway.mode` 和模型配置格式问题）
 - Node.js 升级至 22.14.0 LTS
@@ -85,6 +87,7 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 - **SSH 远程访问** — 启动/停止 SSH 服务器，设置 root 密码，查看连接信息
 - **配置菜单** — 在内置终端中运行 `openclaw configure` 管理网关设置
 - **节点设备能力** — 7 种能力（15 个命令）通过 WebSocket 节点协议暴露给 AI
+- **无障碍服务** — Android AccessibilityService 支持，可监听界面事件并辅助操作
 - **Token URL 显示** — 自动捕获并显示认证令牌 URL，支持一键复制
 - **Web 仪表盘** — 嵌入式 WebView 加载带认证的仪表盘
 - **实时日志** — 网关日志实时查看，支持搜索/筛选
